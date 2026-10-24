@@ -516,7 +516,7 @@ export function useBoatSystem(
     }
     
     ctx.restore();
-  }, [worldStateRef, boatsRef, visualHour]);
+  }, [worldStateRef, boatsRef, visualHour, isMobile]);
 
   return {
     updateBoats,

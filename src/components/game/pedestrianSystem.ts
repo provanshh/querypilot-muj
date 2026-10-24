@@ -12,12 +12,9 @@
 import { Tile, BuildingType } from '@/types/game';
 import {
   Pedestrian,
-  PedestrianState,
   PedestrianActivity,
   PedestrianDestType,
   CarDirection,
-  TILE_WIDTH,
-  TILE_HEIGHT,
 } from './types';
 import {
   PEDESTRIAN_SKIN_COLORS,
@@ -41,7 +38,7 @@ import {
   PEDESTRIAN_BEACH_SWIM_CHANCE,
   PEDESTRIAN_MAT_COLORS,
 } from './constants';
-import { isRoadTile, getDirectionOptions, findPathOnRoads, getDirectionToTile, findNearestRoadToBuilding } from './utils';
+import { isRoadTile, findPathOnRoads, getDirectionToTile, findNearestRoadToBuilding } from './utils';
 
 // Building types that are recreational (pedestrians do activities here)
 const RECREATION_BUILDINGS: BuildingType[] = [
@@ -130,7 +127,7 @@ const BALL_ACTIVITIES: PedestrianActivity[] = [
 /**
  * Get a random activity for a building type
  */
-export function getActivityForBuilding(buildingType: BuildingType): PedestrianActivity {
+function getActivityForBuilding(buildingType: BuildingType): PedestrianActivity {
   const activities = BUILDING_ACTIVITIES[buildingType];
   if (activities && activities.length > 0) {
     return activities[Math.floor(Math.random() * activities.length)];
@@ -141,21 +138,21 @@ export function getActivityForBuilding(buildingType: BuildingType): PedestrianAc
 /**
  * Check if a building type is recreational
  */
-export function isRecreationalBuilding(buildingType: BuildingType): boolean {
+function isRecreationalBuilding(buildingType: BuildingType): boolean {
   return RECREATION_BUILDINGS.includes(buildingType);
 }
 
 /**
  * Check if a building type can be entered by pedestrians
  */
-export function canPedestrianEnterBuilding(buildingType: BuildingType): boolean {
+function canPedestrianEnterBuilding(buildingType: BuildingType): boolean {
   return ENTERABLE_BUILDINGS.includes(buildingType);
 }
 
 /**
  * Check if a building type is a shop (visible approach/shopping)
  */
-export function isShopBuilding(buildingType: BuildingType): boolean {
+function isShopBuilding(buildingType: BuildingType): boolean {
   return SHOP_BUILDINGS.includes(buildingType);
 }
 
@@ -163,7 +160,7 @@ export function isShopBuilding(buildingType: BuildingType): boolean {
  * Generate random activity position offset within a tile
  * Spread pedestrians out within the tile bounds
  */
-export function getRandomActivityOffset(): { x: number; y: number } {
+function getRandomActivityOffset(): { x: number; y: number } {
   // Random offset to spread pedestrians within tile (stays inside diamond)
   return {
     x: (Math.random() - 0.5) * 20,
@@ -240,7 +237,7 @@ export function createPedestrian(
 /**
  * Determine what should happen when pedestrian arrives at destination
  */
-export function handleArrivalAtDestination(
+function handleArrivalAtDestination(
   ped: Pedestrian,
   grid: Tile[][],
   gridSize: number
@@ -1088,7 +1085,7 @@ export function getPedestrianOpacity(ped: Pedestrian): number {
 /**
  * Beach tile info with edge direction
  */
-export type BeachTileInfo = {
+type BeachTileInfo = {
   waterX: number;      // Water tile X
   waterY: number;      // Water tile Y
   landX: number;       // Adjacent land tile X
@@ -1228,11 +1225,4 @@ export function spawnPedestrianAtBeach(
   }
   
   return ped;
-}
-
-/**
- * Check if a pedestrian is a beach-goer (for filtering in draw calls)
- */
-export function isBeachPedestrian(ped: Pedestrian): boolean {
-  return ped.state === 'at_beach';
 }

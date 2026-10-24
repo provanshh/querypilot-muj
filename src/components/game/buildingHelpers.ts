@@ -3,7 +3,7 @@ import { Tile, BuildingType } from '@/types/game';
 import { getBuildingSize } from '@/lib/simulation';
 
 /** Pre-computed tile metadata for O(1) lookups during rendering */
-export interface TileMetadata {
+interface TileMetadata {
   isPartOfMultiTileBuilding: boolean;
   isPartOfParkBuilding: boolean;
   isAdjacentToWater: boolean;

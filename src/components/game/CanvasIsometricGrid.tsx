@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { useMessages, T, Var, useGT } from 'gt-next';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useGame } from '@/context/GameContext';
-import { TOOL_INFO, Tile, Building, BuildingType, AdjacentCity, Tool } from '@/types/game';
+import { TOOL_INFO, Tile, BuildingType, Tool } from '@/types/game';
 import { getBuildingSize, requiresWaterAdjacency, getWaterAdjacency } from '@/lib/simulation';
 import { FireIcon, SafetyIcon } from '@/components/ui/Icons';
-import { getSpriteCoords, BUILDING_TO_SPRITE, SPRITE_VERTICAL_OFFSETS, SPRITE_HORIZONTAL_OFFSETS, getActiveSpritePack } from '@/lib/renderConfig';
-import { selectSpriteSource, calculateSpriteCoords, calculateSpriteScale, calculateSpriteOffsets, getSpriteRenderInfo } from '@/components/game/buildingSprite';
+import { BUILDING_TO_SPRITE, getActiveSpritePack } from '@/lib/renderConfig';
+import { selectSpriteSource, calculateSpriteCoords, calculateSpriteScale, calculateSpriteOffsets } from '@/components/game/buildingSprite';
 
 // Import shadcn components
 import { Button } from '@/components/ui/button';
@@ -62,7 +61,6 @@ import {
 import { SERVICE_CONFIG, SERVICE_RANGE_INCREASE_PER_LEVEL } from '@/lib/simulation';
 import { drawPlaceholderBuilding } from '@/components/game/placeholders';
 import { loadImage, loadSpriteImage, onImageLoaded, getCachedImage } from '@/components/game/imageLoader';
-import { TileInfoPanel } from '@/components/game/panels';
 import {
   findMarinasAndPiers,
   findAdjacentWaterTile,
@@ -112,26 +110,46 @@ import { Train } from '@/components/game/types';
 import { useLightingSystem } from '@/components/game/lightingSystem';
 
 // Props interface for CanvasIsometricGrid
-export interface CanvasIsometricGridProps {
+interface CanvasIsometricGridProps {
   overlayMode: OverlayMode;
   selectedTile: { x: number; y: number } | null;
   setSelectedTile: (tile: { x: number; y: number } | null) => void;
   isMobile?: boolean;
-  navigationTarget?: { x: number; y: number } | null;
+  /** Glide the camera to a tile; `zoom` optionally animates the zoom level too. */
+  navigationTarget?: { x: number; y: number; zoom?: number } | null;
   onNavigationComplete?: () => void;
   onViewportChange?: (viewport: { offset: { x: number; y: number }; zoom: number; canvasSize: { width: number; height: number } }) => void;
   onBargeDelivery?: (cargoValue: number, cargoType: number) => void;
+  zoomAction?: { type: 'in' | 'out' | 'reset' | 'fit'; timestamp: number } | null;
+  panAction?: { direction: 'up' | 'down' | 'left' | 'right'; timestamp: number } | null;
+  theme?: 'realitiez' | 'emerald' | 'cyber' | 'synthwave' | 'island';
+  /** Force a fixed hour of day (0-23) for lighting; overrides theme defaults */
+  fixedHour?: number;
 }
 
+const m = (s: string) => s;
+const gt = (s: string, vars: Record<string, string | number> = {}) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ''));
+
 // Canvas-based Isometric Grid - HIGH PERFORMANCE
-export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile, isMobile = false, navigationTarget, onNavigationComplete, onViewportChange, onBargeDelivery }: CanvasIsometricGridProps) {
+export function CanvasIsometricGrid({ 
+  overlayMode, 
+  selectedTile, 
+  setSelectedTile, 
+  isMobile = false, 
+  navigationTarget, 
+  onNavigationComplete, 
+  onViewportChange, 
+  onBargeDelivery,
+  zoomAction,
+  panAction,
+  theme = 'realitiez',
+  fixedHour,
+}: CanvasIsometricGridProps) {
   const { state, latestStateRef, placeAtTile, finishTrackDrag, connectToCity, checkAndDiscoverCities, currentSpritePack, visualHour } = useGame();
   const { grid, gridSize, selectedTool, speed, adjacentCities, waterBodies, gameVersion } = state;
   
   // PERF: Use latestStateRef for real-time grid access in animation loops
   // This avoids waiting for React state sync which is throttled for performance
-  const m = useMessages();
-  const gt = useGT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hoverCanvasRef = useRef<HTMLCanvasElement>(null); // PERF: Separate canvas for hover/selection highlights
   const carsCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -141,7 +159,18 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
   const containerRef = useRef<HTMLDivElement>(null);
   const renderPendingRef = useRef<number | null>(null); // PERF: Track pending render frame
   const lastMainRenderTimeRef = useRef<number>(0); // PERF: Throttle main renders at high speed
-  const [offset, setOffset] = useState({ x: isMobile ? 200 : 620, y: isMobile ? 100 : 160 });
+  const initialCenteredRef = useRef(false);
+  const [zoom, setZoom] = useState(isMobile ? 0.65 : 0.85);
+  const [offset, setOffset] = useState(() => {
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const h = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const z = isMobile ? 0.65 : 0.85;
+    // (28, 28) screen coordinates are screenX = 0, screenY = (28 + 28) * 16 = 896
+    return {
+      x: w / 2,
+      y: h / 2 - 896 * z,
+    };
+  });
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
   const cameraAnimRef = useRef<number | null>(null);
@@ -152,7 +181,7 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
   const isPinchZoomingRef = useRef(false); // Ref for animation loop to check pinch zoom state
   const isWheelZoomingRef = useRef(false); // Ref for animation loop to check desktop wheel zoom state
   const wheelZoomTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Timeout to detect end of wheel zoom
-  const zoomRef = useRef(isMobile ? 0.6 : 1); // Ref for animation loop to check zoom level
+  const zoomRef = useRef(isMobile ? 0.65 : 0.85); // Ref for animation loop to check zoom level
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const panCandidateRef = useRef<{ startX: number; startY: number; gridX: number; gridY: number } | null>(null);
   const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
@@ -164,7 +193,6 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
     screenX: number;
     screenY: number;
   } | null>(null);
-  const [zoom, setZoom] = useState(isMobile ? 0.6 : 1);
   const carsRef = useRef<Car[]>([]);
   const carIdRef = useRef(0);
   const carSpawnTimerRef = useRef(0);
@@ -259,8 +287,8 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
   const roadAnalysisCacheRef = useRef<Map<number, ReturnType<typeof analyzeMergedRoad>>>(new Map());
   const roadAnalysisCacheVersionRef = useRef(-1);
 
-  // PERF: Cache background gradient - only recreate when canvas height changes
-  const bgGradientCacheRef = useRef<{ gradient: CanvasGradient | null; height: number }>({ gradient: null, height: 0 });
+  // PERF: Cache background gradient - only recreate when canvas height or theme changes
+  const bgGradientCacheRef = useRef<{ gradient: CanvasGradient | null; height: number; theme?: string }>({ gradient: null, height: 0 });
 
   // PERF: Render queue arrays cached across frames to reduce GC pressure
   // These are cleared at the start of each render frame with .length = 0
@@ -609,7 +637,7 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
     const pressed = keysPressedRef.current;
     const isTypingTarget = (target: EventTarget | null) => {
       const el = target as HTMLElement | null;
-      return !!el?.closest('input, textarea, select, [contenteditable="true"]');
+      return !!el?.closest?.('input, textarea, select, [contenteditable="true"]');
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -961,12 +989,25 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
           width: Math.round(rect.width * dpr),
           height: Math.round(rect.height * dpr),
         });
+
+        // Center on database city core (28, 28) on initial measure
+        if (!initialCenteredRef.current && rect.width > 0 && rect.height > 0) {
+          initialCenteredRef.current = true;
+          const initialZoom = isMobile ? 0.65 : 0.85;
+          const { screenX, screenY } = gridToScreen(28, 28, 0, 0);
+          const initialOffset = {
+            x: rect.width / 2 - screenX * initialZoom,
+            y: rect.height / 2 - screenY * initialZoom,
+          };
+          setOffset(initialOffset);
+          setZoom(initialZoom);
+        }
       }
     };
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
-  }, []);
+  }, [isMobile]);
   
   // Main render function - PERF: Uses requestAnimationFrame throttling to batch multiple state updates
   useEffect(() => {
@@ -1002,18 +1043,64 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
       // Disable image smoothing for crisp pixel art
       ctx.imageSmoothingEnabled = false;
     
-      // PERF: Clear canvas with cached gradient background - only recreate when canvas height changes
+      // PERF: Clear canvas with cached gradient background - only recreate when canvas height or theme changes
       const bgCache = bgGradientCacheRef.current;
-      if (!bgCache.gradient || bgCache.height !== canvas.height) {
+      if (!bgCache.gradient || bgCache.height !== canvas.height || bgCache.theme !== theme) {
         const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, '#0f1419');
-        gradient.addColorStop(0.5, '#141c24');
-        gradient.addColorStop(1, '#1a2a1f');
+        if (theme === 'cyber') {
+          gradient.addColorStop(0, '#060a12');
+          gradient.addColorStop(0.5, '#0c1424');
+          gradient.addColorStop(1, '#08101e');
+        } else if (theme === 'synthwave') {
+          gradient.addColorStop(0, '#150826');
+          gradient.addColorStop(0.5, '#280f3e');
+          gradient.addColorStop(1, '#170a2b');
+        } else if (theme === 'island') {
+          gradient.addColorStop(0, '#1b6fb0');
+          gradient.addColorStop(0.5, '#1f7cc2');
+          gradient.addColorStop(1, '#1a68a6');
+        } else if (theme === 'emerald') {
+          // Emerald theme: vibrant lush green meadow gradient
+          gradient.addColorStop(0, '#0c2415');
+          gradient.addColorStop(0.35, '#133921');
+          gradient.addColorStop(0.7, '#1a482b');
+          gradient.addColorStop(1, '#0e2b18');
+        } else {
+          // Realitiez modern theme: clean light architectural isometric backdrop
+          gradient.addColorStop(0, '#f8fafc');
+          gradient.addColorStop(0.4, '#f1f5f9');
+          gradient.addColorStop(1, '#edf2f7');
+        }
         bgCache.gradient = gradient;
         bgCache.height = canvas.height;
+        bgCache.theme = theme;
       }
       ctx.fillStyle = bgCache.gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (theme === 'emerald') {
+        // Lush green ambient radial lighting across outer canvas
+        const radGrad = ctx.createRadialGradient(
+          canvas.width / 2, canvas.height / 2, 80,
+          canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.8
+        );
+        radGrad.addColorStop(0, 'rgba(34, 197, 94, 0.14)');
+        radGrad.addColorStop(0.5, 'rgba(16, 185, 129, 0.08)');
+        radGrad.addColorStop(1, 'rgba(5, 46, 22, 0)');
+        ctx.fillStyle = radGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (theme === 'realitiez') {
+        // Soft ambient radial vignette for light theme
+        const radGrad = ctx.createRadialGradient(
+          canvas.width / 2, canvas.height / 2, 120,
+          canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.75
+        );
+        radGrad.addColorStop(0, 'rgba(92, 84, 229, 0.03)');
+        radGrad.addColorStop(0.6, 'rgba(124, 58, 237, 0.015)');
+        radGrad.addColorStop(1, 'rgba(237, 242, 247, 0)');
+        ctx.fillStyle = radGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
     
       ctx.save();
       // Scale for device pixel ratio first, then apply zoom
@@ -2171,7 +2258,7 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
       }
     };
   // PERF: hoveredTile and selectedTile removed from deps - now rendered on separate hover canvas layer
-  }, [grid, gridSize, offset, zoom, overlayMode, imagesLoaded, imageLoadVersion, canvasSize, dragStartTile, dragEndTile, state.services, currentSpritePack, waterBodies, getTileMetadata, showsDragGrid, isMobile]);
+  }, [grid, gridSize, offset, zoom, overlayMode, imagesLoaded, imageLoadVersion, canvasSize, dragStartTile, dragEndTile, state.services, currentSpritePack, waterBodies, getTileMetadata, showsDragGrid, isMobile, theme]);
   
   // PERF: Lightweight hover/selection overlay - renders ONLY tile highlights
   // This runs frequently (on mouse move) but is extremely fast since it only draws simple shapes
@@ -2248,6 +2335,11 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
       const selectedOrigin = grid[selectedTile.y]?.[selectedTile.x];
       if (selectedOrigin) {
         const selectedSize = getBuildingSize(selectedOrigin.building.type);
+        const isRealitiez = theme === 'realitiez';
+        const isIsland = theme === 'island';
+        const fillCol = isRealitiez ? 'rgba(92, 84, 229, 0.35)' : isIsland ? 'rgba(251, 191, 36, 0.32)' : 'rgba(100, 200, 255, 0.3)';
+        const strokeCol = isRealitiez ? '#5c54e5' : isIsland ? '#fbbf24' : '#60a5fa';
+
         // Draw highlight for each tile in the building footprint
         for (let dx = 0; dx < selectedSize.width; dx++) {
           for (let dy = 0; dy < selectedSize.height; dy++) {
@@ -2255,9 +2347,60 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
             const ty = selectedTile.y + dy;
             if (tx >= 0 && tx < gridSize && ty >= 0 && ty < gridSize) {
               const { screenX, screenY } = gridToScreen(tx, ty, 0, 0);
-              drawHighlight(screenX, screenY, 'rgba(100, 200, 255, 0.3)', '#60a5fa');
+              drawHighlight(screenX, screenY, fillCol, strokeCol);
             }
           }
+        }
+
+        // When in Realitiez theme, draw glowing purple architectural accents matching reference photo
+        if (isRealitiez) {
+          const originCoords = gridToScreen(selectedTile.x, selectedTile.y, 0, 0);
+          const totalW = selectedSize.width * TILE_WIDTH;
+          const totalH = selectedSize.height * TILE_HEIGHT;
+          const prismHeight = Math.min(130, Math.max(70, (selectedSize.width + selectedSize.height) * 32));
+
+          const baseCorners = [
+            { x: originCoords.screenX + TILE_WIDTH / 2, y: originCoords.screenY },
+            { x: originCoords.screenX + totalW, y: originCoords.screenY + totalH / 2 },
+            { x: originCoords.screenX + totalW / 2, y: originCoords.screenY + totalH },
+            { x: originCoords.screenX, y: originCoords.screenY + totalH / 2 },
+          ];
+
+          const topCorners = baseCorners.map(c => ({ x: c.x, y: c.y - prismHeight }));
+
+          ctx.save();
+          ctx.strokeStyle = '#5c54e5';
+          ctx.lineWidth = 2;
+          ctx.shadowColor = 'rgba(92, 84, 229, 0.6)';
+          ctx.shadowBlur = 8;
+
+          // Corner accent points and vertical edges
+          topCorners.forEach((tc, idx) => {
+            const bc = baseCorners[idx];
+            ctx.beginPath();
+            ctx.moveTo(bc.x, bc.y);
+            ctx.lineTo(tc.x, tc.y);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(tc.x, tc.y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.stroke();
+          });
+
+          // Top roof outline
+          ctx.beginPath();
+          ctx.moveTo(topCorners[0].x, topCorners[0].y);
+          ctx.lineTo(topCorners[1].x, topCorners[1].y);
+          ctx.lineTo(topCorners[2].x, topCorners[2].y);
+          ctx.lineTo(topCorners[3].x, topCorners[3].y);
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(92, 84, 229, 0.25)';
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.restore();
         }
       }
     }
@@ -2378,7 +2521,7 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
     }
     
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-  }, [hoveredTile, selectedTile, selectedTool, offset, zoom, gridSize, grid, isDragging, dragStartTile, dragEndTile]);
+  }, [hoveredTile, selectedTile, selectedTool, offset, zoom, gridSize, grid, isDragging, dragStartTile, dragEndTile, theme]);
   
   // Animate decorative car traffic AND emergency vehicles on top of the base canvas
   useEffect(() => {
@@ -2519,11 +2662,11 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
   // PERF: Removed grid, gridSize, speed from deps - they're accessed via worldStateRef to avoid restarting animation on every tick
   }, [canvasSize.width, canvasSize.height, updateCars, updateBuses, drawCars, drawBuses, spawnCrimeIncidents, updateCrimeIncidents, updateEmergencyVehicles, drawEmergencyVehicles, updatePedestrians, drawPedestrians, drawRecreationPedestrians, updateAirplanes, drawAirplanes, updateHelicopters, drawHelicopters, updateSeaplanes, drawSeaplanes, updateBoats, drawBoats, updateBarges, drawBarges, updateTrains, drawTrainsCallback, drawIncidentIndicators, updateFireworks, drawFireworks, updateSmog, drawSmog, updateClouds, drawClouds, visualHour, isMobile]);
   
-  // Day/Night cycle lighting rendering - extracted to useLightingSystem hook
+  // Day/Night cycle lighting rendering - for modern light theme, force full daylight (hour 12)
   useLightingSystem({
     canvasRef: lightingCanvasRef,
     worldStateRef,
-    visualHour,
+    visualHour: fixedHour ?? (theme === 'realitiez' || theme === 'island' ? 12 : visualHour),
     offset,
     zoom,
     canvasWidth: canvasSize.width,
@@ -2565,22 +2708,9 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
         }
 
         if (selectedTool === 'select') {
-          const tile = grid[gridY]?.[gridX];
-          const isOpenTile = tile?.building.type === 'empty' ||
-            tile?.building.type === 'grass' ||
-            tile?.building.type === 'water';
-          if (isOpenTile) {
-            panCandidateRef.current = { startX: e.clientX, startY: e.clientY, gridX, gridY };
-            return;
-          }
-          panCandidateRef.current = null;
-          // For multi-tile buildings, select the origin tile
-          const origin = findBuildingOrigin(gridX, gridY);
-          if (origin) {
-            setSelectedTile({ x: origin.originX, y: origin.originY });
-          } else {
-            setSelectedTile({ x: gridX, y: gridY });
-          }
+          // Allow panning from any tile or building via drag threshold
+          panCandidateRef.current = { startX: e.clientX, startY: e.clientY, gridX, gridY };
+          return;
         } else if (showsDragGrid) {
           panCandidateRef.current = null;
           // Start drag rectangle selection for zoning tools
@@ -2605,7 +2735,7 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
         }
       }
     }
-  }, [offset, gridSize, selectedTool, placeAtTile, zoom, showsDragGrid, supportsDragPlace, setSelectedTile, findBuildingOrigin, grid]);
+  }, [offset, gridSize, selectedTool, placeAtTile, zoom, showsDragGrid, supportsDragPlace]);
   
   // Calculate camera bounds based on grid size
   const getMapBounds = useCallback((currentZoom: number, canvasW: number, canvasH: number) => {
@@ -2647,44 +2777,65 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
     // Convert grid coordinates to screen coordinates
     const { screenX, screenY } = gridToScreen(navigationTarget.x, navigationTarget.y, 0, 0);
     
-    // Calculate offset to center this position on the canvas
-    const centerX = canvasSize.width / 2;
-    const centerY = canvasSize.height / 2;
+    // canvasSize is in device pixels; offsets are in CSS pixels
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+    const cssW = canvasSize.width / dpr;
+    const cssH = canvasSize.height / dpr;
+    const centerX = cssW / 2;
+    const centerY = cssH / 2;
     
-    const targetXRaw = centerX - screenX * zoom;
-    const targetYRaw = centerY - screenY * zoom;
-    
-    const bounds = getMapBounds(zoom, canvasSize.width, canvasSize.height);
-    const destX = Math.max(bounds.minOffsetX, Math.min(bounds.maxOffsetX, targetXRaw));
-    const destY = Math.max(bounds.minOffsetY, Math.min(bounds.maxOffsetY, targetYRaw));
+    const z0 = zoomRef.current;
+    const z1 = navigationTarget.zoom ?? z0;
+    const wx = screenX + TILE_WIDTH / 2;
+    const wy = screenY + TILE_HEIGHT / 2;
+    const clampAt = (z: number) => {
+      const bounds = getMapBounds(z, cssW, cssH);
+      return {
+        x: Math.max(bounds.minOffsetX, Math.min(bounds.maxOffsetX, centerX - wx * z)),
+        y: Math.max(bounds.minOffsetY, Math.min(bounds.maxOffsetY, centerY - wy * z)),
+      };
+    };
+    const dest = clampAt(z1);
 
     const originX = offsetRef.current.x;
     const originY = offsetRef.current.y;
-    const dx = destX - originX;
-    const dy = destY - originY;
-    const dist = Math.hypot(dx, dy);
+    const dist = Math.hypot(dest.x - originX, dest.y - originY);
+    const zoomChange = Math.abs(z1 - z0);
 
     // If virtually at target, snap immediately
-    if (dist < 4) {
-      setOffset({ x: destX, y: destY });
+    if (dist < 4 && zoomChange < 0.01) {
+      setOffset(dest);
       onNavigationComplete?.();
       return;
     }
 
-    // Dynamic duration based on travel distance (smooth & responsive)
-    const duration = Math.min(650, Math.max(300, dist * 0.5));
+    // Dynamic duration based on travel distance (smooth & responsive); long flights take longer
+    const duration = zoomChange > 0.01 ? Math.min(1400, Math.max(700, dist * 0.6)) : Math.min(650, Math.max(300, dist * 0.5));
     const startTime = performance.now();
     const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
     const step = (time: number) => {
       const elapsed = time - startTime;
       const progress = Math.min(1, elapsed / duration);
-      const eased = easeOutCubic(progress);
-
-      setOffset({
-        x: originX + dx * eased,
-        y: originY + dy * eased,
-      });
+      if (zoomChange > 0.01) {
+        // Keep the world point under the screen centre moving smoothly while zooming
+        const e = easeInOut(progress);
+        const z = z0 + (z1 - z0) * e;
+        const startCx = (centerX - originX) / z0;
+        const startCy = (centerY - originY) / z0;
+        const cx = startCx + (wx - startCx) * e;
+        const cy = startCy + (wy - startCy) * e;
+        zoomRef.current = z;
+        setZoom(z);
+        setOffset(progress < 1 ? { x: centerX - cx * z, y: centerY - cy * z } : clampAt(z1));
+      } else {
+        const eased = easeOutCubic(progress);
+        setOffset({
+          x: originX + (dest.x - originX) * eased,
+          y: originY + (dest.y - originY) * eased,
+        });
+      }
 
       if (progress < 1) {
         cameraAnimRef.current = requestAnimationFrame(step);
@@ -2702,7 +2853,95 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
         cameraAnimRef.current = null;
       }
     };
-  }, [navigationTarget, zoom, canvasSize.width, canvasSize.height, getMapBounds, onNavigationComplete]);
+  // zoom is read via zoomRef so an animated zoom does not restart the flight every frame
+  }, [navigationTarget, canvasSize.width, canvasSize.height, getMapBounds, onNavigationComplete]);
+
+  // Handle explicit Zoom In / Zoom Out / Reset / Fit action buttons
+  useEffect(() => {
+    if (!zoomAction) return;
+
+    const centerX = canvasSize.width / 2;
+    const centerY = canvasSize.height / 2;
+
+    if (zoomAction.type === 'in') {
+      const newZoom = Math.min(ZOOM_MAX, Number((zoom * 1.25).toFixed(2)));
+      if (newZoom === zoom) return;
+      const worldX = (centerX - offset.x) / zoom;
+      const worldY = (centerY - offset.y) / zoom;
+      const newOffsetX = centerX - worldX * newZoom;
+      const newOffsetY = centerY - worldY * newZoom;
+      setOffset(clampOffset({ x: newOffsetX, y: newOffsetY }, newZoom));
+      setZoom(newZoom);
+    } else if (zoomAction.type === 'out') {
+      const newZoom = Math.max(ZOOM_MIN, Number((zoom / 1.25).toFixed(2)));
+      if (newZoom === zoom) return;
+      const worldX = (centerX - offset.x) / zoom;
+      const worldY = (centerY - offset.y) / zoom;
+      const newOffsetX = centerX - worldX * newZoom;
+      const newOffsetY = centerY - worldY * newZoom;
+      setOffset(clampOffset({ x: newOffsetX, y: newOffsetY }, newZoom));
+      setZoom(newZoom);
+    } else if (zoomAction.type === 'reset') {
+      const newZoom = 1.0;
+      const centerGridCoord = Math.floor(gridSize / 2);
+      const { screenX, screenY } = gridToScreen(centerGridCoord, centerGridCoord, 0, 0);
+      const newOffsetX = centerX - screenX * newZoom;
+      const newOffsetY = centerY - screenY * newZoom;
+      setOffset(clampOffset({ x: newOffsetX, y: newOffsetY }, newZoom));
+      setZoom(newZoom);
+    } else if (zoomAction.type === 'fit') {
+      const newZoom = isMobile ? 0.45 : 0.65;
+      const centerGridCoord = Math.floor(gridSize / 2);
+      const { screenX, screenY } = gridToScreen(centerGridCoord, centerGridCoord, 0, 0);
+      const newOffsetX = centerX - screenX * newZoom;
+      const newOffsetY = centerY - screenY * newZoom;
+      setOffset(clampOffset({ x: newOffsetX, y: newOffsetY }, newZoom));
+      setZoom(newZoom);
+    }
+  }, [zoomAction, zoom, offset, canvasSize, gridSize, isMobile, clampOffset]);
+
+  // Handle explicit Directional Arrow Navigation Pan actions
+  useEffect(() => {
+    if (!panAction) return;
+    const panStep = 180; // pixels to glide per arrow click
+    let deltaX = 0;
+    let deltaY = 0;
+    if (panAction.direction === 'up') deltaY = panStep;
+    if (panAction.direction === 'down') deltaY = -panStep;
+    if (panAction.direction === 'left') deltaX = panStep;
+    if (panAction.direction === 'right') deltaX = -panStep;
+
+    setOffset(prev => clampOffset({ x: prev.x + deltaX, y: prev.y + deltaY }, zoom));
+  }, [panAction, zoom, clampOffset]);
+
+  // Global keyboard shortcuts for canvas zooming (+ / - / 0)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if (e.key === '+' || e.key === '=') {
+        const centerX = canvasSize.width / 2;
+        const centerY = canvasSize.height / 2;
+        const newZoom = Math.min(ZOOM_MAX, Number((zoom * 1.2).toFixed(2)));
+        const worldX = (centerX - offset.x) / zoom;
+        const worldY = (centerY - offset.y) / zoom;
+        setOffset(clampOffset({ x: centerX - worldX * newZoom, y: centerY - worldY * newZoom }, newZoom));
+        setZoom(newZoom);
+      } else if (e.key === '-' || e.key === '_') {
+        const centerX = canvasSize.width / 2;
+        const centerY = canvasSize.height / 2;
+        const newZoom = Math.max(ZOOM_MIN, Number((zoom / 1.2).toFixed(2)));
+        const worldX = (centerX - offset.x) / zoom;
+        const worldY = (centerY - offset.y) / zoom;
+        setOffset(clampOffset({ x: centerX - worldX * newZoom, y: centerY - worldY * newZoom }, newZoom));
+        setZoom(newZoom);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [zoom, offset, canvasSize, clampOffset]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isPanning && panCandidateRef.current) {
@@ -3138,14 +3377,6 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
         style={{ mixBlendMode: 'multiply' }}
       />
       
-      {selectedTile && selectedTool === 'select' && !isMobile && (
-        <TileInfoPanel
-          tile={grid[selectedTile.y][selectedTile.x]}
-          services={state.services}
-          onClose={() => setSelectedTile(null)}
-        />
-      )}
-      
       {/* City Connection Dialog */}
       {cityConnectionDialog && (() => {
         // Find a discovered but not connected city in this direction
@@ -3164,27 +3395,27 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
               onMouseDown={(e) => e.stopPropagation()}
             >
               <DialogHeader>
-                <T>
+                <>
                   <DialogTitle>City Discovered!</DialogTitle>
-                </T>
-                <T>
+                </>
+                <>
                   <DialogDescription>
-                    Your road has reached the <Var>{cityConnectionDialog.direction}</Var> border! You&apos;ve discovered <Var>{city.name}</Var>.
+                    Your road has reached the <>{cityConnectionDialog.direction}</> border! You&apos;ve discovered <>{city.name}</>.
                   </DialogDescription>
-                </T>
+                </>
               </DialogHeader>
               <div className="flex flex-col gap-4 mt-4">
-                <T>
+                <>
                   <div className="text-sm text-muted-foreground">
-                    Connecting to <Var>{city.name}</Var> will establish a trade route, providing:
+                    Connecting to <>{city.name}</> will establish a trade route, providing:
                     <ul className="mt-2 space-y-1 list-disc list-inside">
                       <li>$5,000 one-time bonus</li>
                       <li>$200/month additional income</li>
                     </ul>
                   </div>
-                </T>
+                </>
                 <div className="flex gap-2 justify-end">
-                  <T>
+                  <>
                     <Button
                       variant="outline"
                       onClick={(e) => {
@@ -3196,8 +3427,8 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
                     >
                       Maybe Later
                     </Button>
-                  </T>
-                  <T>
+                  </>
+                  <>
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -3207,9 +3438,9 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
                         setDragEndTile(null);
                       }}
                     >
-                      Connect to <Var>{city.name}</Var>
+                      Connect to <>{city.name}</>
                     </Button>
-                  </T>
+                  </>
                 </div>
               </div>
             </DialogContent>

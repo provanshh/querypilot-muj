@@ -1,10 +1,9 @@
 // Game-specific types for rendering and animation
 
-import { CardinalDirection } from '@/core/types';
 
 // Isometric tile dimensions
 export const TILE_WIDTH = 64;
-export const HEIGHT_RATIO = 0.60;
+const HEIGHT_RATIO = 0.60;
 export const TILE_HEIGHT = TILE_WIDTH * HEIGHT_RATIO;
 export const KEY_PAN_SPEED = 520;
 
@@ -245,19 +244,6 @@ export type PedestrianActivity =
   | 'shopping'
   | 'working'
   | 'studying';
-
-// Recreation area types with their associated activities
-export type RecreationAreaType =
-  | 'basketball_court'
-  | 'tennis_court'
-  | 'soccer_field'
-  | 'baseball_field'
-  | 'swimming_pool'
-  | 'skate_park'
-  | 'park_bench'
-  | 'playground'
-  | 'stadium_seating'
-  | 'generic_park';
 
 export type Pedestrian = {
   id: number;
@@ -513,8 +499,14 @@ export type Cloud = {
   cloudType: CloudType;
 };
 
-// Direction metadata - re-export from core
-export type { DirectionMeta } from '@/core/types/grid';
+export type CardinalDirection = 'north' | 'east' | 'south' | 'west';
+
+export interface DirectionMeta {
+  step: { x: number; y: number };
+  vec: { dx: number; dy: number };
+  angle: number;
+  normal: { nx: number; ny: number };
+}
 
 // World render state
 export type WorldRenderState = {

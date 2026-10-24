@@ -11,7 +11,7 @@ import { TILE_WIDTH, TILE_HEIGHT } from './types';
 // ============================================================================
 
 /** Color scheme for a tile surface */
-export type TileColorScheme = {
+type TileColorScheme = {
   top: string;
   left: string;
   right: string;
@@ -19,7 +19,7 @@ export type TileColorScheme = {
 };
 
 /** Corner points of an isometric diamond */
-export type DiamondCorners = {
+type DiamondCorners = {
   top: { x: number; y: number };
   right: { x: number; y: number };
   bottom: { x: number; y: number };
@@ -27,14 +27,14 @@ export type DiamondCorners = {
 };
 
 /** Beach edge direction for determining inward offset */
-export type BeachEdge = 'north' | 'east' | 'south' | 'west';
+type BeachEdge = 'north' | 'east' | 'south' | 'west';
 
 // ============================================================================
 // Color Constants
 // ============================================================================
 
 /** Zone-based color schemes for grass tiles */
-export const ZONE_COLORS: Record<ZoneType, TileColorScheme> = {
+const ZONE_COLORS: Record<ZoneType, TileColorScheme> = {
   none: {
     top: '#4a7c3f',
     left: '#3d6634',
@@ -62,7 +62,7 @@ export const ZONE_COLORS: Record<ZoneType, TileColorScheme> = {
 };
 
 /** Zone border colors (dashed lines) */
-export const ZONE_BORDER_COLORS: Record<ZoneType, string> = {
+const ZONE_BORDER_COLORS: Record<ZoneType, string> = {
   none: 'transparent',
   residential: '#22c55e',
   commercial: '#3b82f6',
@@ -70,7 +70,7 @@ export const ZONE_BORDER_COLORS: Record<ZoneType, string> = {
 };
 
 /** Grey base tile colors for buildings */
-export const GREY_TILE_COLORS: TileColorScheme = {
+const GREY_TILE_COLORS: TileColorScheme = {
   top: '#6b7280',
   left: '#4b5563',
   right: '#9ca3af',
@@ -78,13 +78,13 @@ export const GREY_TILE_COLORS: TileColorScheme = {
 };
 
 /** Beach/sidewalk colors */
-export const BEACH_COLORS = {
+const BEACH_COLORS = {
   fill: '#d4a574',
   curb: '#b8956a',
 } as const;
 
 /** Dirt/foundation plot colors for construction phase 1 */
-export const FOUNDATION_COLORS: TileColorScheme = {
+const FOUNDATION_COLORS: TileColorScheme = {
   top: '#a67c52',     // Sandy brown top
   left: '#8b6914',    // Darker ochre left face
   right: '#c4a35a',   // Lighter tan right face
@@ -96,7 +96,7 @@ export const FOUNDATION_COLORS: TileColorScheme = {
 // ============================================================================
 
 /** Calculate the four corner points of an isometric diamond */
-export function getDiamondCorners(x: number, y: number, w = TILE_WIDTH, h = TILE_HEIGHT): DiamondCorners {
+function getDiamondCorners(x: number, y: number, w = TILE_WIDTH, h = TILE_HEIGHT): DiamondCorners {
   return {
     top: { x: x + w / 2, y },
     right: { x: x + w, y: y + h / 2 },
@@ -121,7 +121,7 @@ const BEACH_INWARD_VECTORS: Record<BeachEdge, { dx: number; dy: number }> = {
  * Draw an isometric diamond (top face of a tile).
  * This is the foundation for all tile rendering.
  */
-export function drawIsometricDiamond(
+function drawIsometricDiamond(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -297,74 +297,6 @@ const BEACH_CONFIG = {
 } as const;
 
 /**
- * Draw a beach strip along one edge of a tile.
- * @param ctx - Canvas context
- * @param startX - Start X coordinate
- * @param startY - Start Y coordinate
- * @param endX - End X coordinate
- * @param endY - End Y coordinate
- * @param inwardDx - X component of inward direction
- * @param inwardDy - Y component of inward direction
- * @param beachWidth - Width of the beach strip
- * @param shortenStart - Whether to shorten at start (for corner connection)
- * @param shortenEnd - Whether to shorten at end (for corner connection)
- */
-function drawBeachEdge(
-  ctx: CanvasRenderingContext2D,
-  startX: number,
-  startY: number,
-  endX: number,
-  endY: number,
-  inwardDx: number,
-  inwardDy: number,
-  beachWidth: number,
-  shortenStart: boolean,
-  shortenEnd: boolean
-): void {
-  const shortenDist = beachWidth * BEACH_CONFIG.cornerFactor;
-
-  // Calculate edge direction vector
-  const edgeDx = endX - startX;
-  const edgeDy = endY - startY;
-  const edgeLen = Math.hypot(edgeDx, edgeDy);
-  const edgeDirX = edgeDx / edgeLen;
-  const edgeDirY = edgeDy / edgeLen;
-
-  // Apply shortening at corners
-  let actualStartX = startX;
-  let actualStartY = startY;
-  let actualEndX = endX;
-  let actualEndY = endY;
-
-  if (shortenStart && edgeLen > shortenDist * 2) {
-    actualStartX = startX + edgeDirX * shortenDist;
-    actualStartY = startY + edgeDirY * shortenDist;
-  }
-  if (shortenEnd && edgeLen > shortenDist * 2) {
-    actualEndX = endX - edgeDirX * shortenDist;
-    actualEndY = endY - edgeDirY * shortenDist;
-  }
-
-  // Draw curb (darker line at outer edge)
-  ctx.strokeStyle = BEACH_COLORS.curb;
-  ctx.lineWidth = BEACH_CONFIG.curbWidth;
-  ctx.beginPath();
-  ctx.moveTo(actualStartX, actualStartY);
-  ctx.lineTo(actualEndX, actualEndY);
-  ctx.stroke();
-
-  // Draw beach fill
-  ctx.fillStyle = BEACH_COLORS.fill;
-  ctx.beginPath();
-  ctx.moveTo(actualStartX, actualStartY);
-  ctx.lineTo(actualEndX, actualEndY);
-  ctx.lineTo(actualEndX + inwardDx * beachWidth, actualEndY + inwardDy * beachWidth);
-  ctx.lineTo(actualStartX + inwardDx * beachWidth, actualStartY + inwardDy * beachWidth);
-  ctx.closePath();
-  ctx.fill();
-}
-
-/**
  * Calculate the inner endpoint of a shortened edge (for corner pieces).
  */
 function getShortenedInnerEndpoint(
@@ -394,183 +326,6 @@ function getShortenedInnerEndpoint(
     y: shortenedOuterY + inwardDy * beachWidth,
   };
 }
-
-/**
- * Draw a corner piece where two beach edges meet.
- */
-function drawBeachCorner(
-  ctx: CanvasRenderingContext2D,
-  cornerPoint: { x: number; y: number },
-  edge1Corner: { x: number; y: number },
-  edge1Inward: { dx: number; dy: number },
-  edge2Corner: { x: number; y: number },
-  edge2Inward: { dx: number; dy: number },
-  beachWidth: number
-): void {
-  const inner1 = getShortenedInnerEndpoint(
-    cornerPoint.x, cornerPoint.y,
-    edge1Corner.x, edge1Corner.y,
-    edge1Inward.dx, edge1Inward.dy,
-    beachWidth
-  );
-  const inner2 = getShortenedInnerEndpoint(
-    cornerPoint.x, cornerPoint.y,
-    edge2Corner.x, edge2Corner.y,
-    edge2Inward.dx, edge2Inward.dy,
-    beachWidth
-  );
-
-  ctx.fillStyle = BEACH_COLORS.fill;
-  ctx.beginPath();
-  ctx.moveTo(cornerPoint.x, cornerPoint.y);
-  ctx.lineTo(inner1.x, inner1.y);
-  ctx.lineTo(inner2.x, inner2.y);
-  ctx.closePath();
-  ctx.fill();
-}
-
-/**
- * Draw beach effect on tiles adjacent to water.
- * Creates a sidewalk-style sandy strip along edges facing water.
- */
-export function drawBeach(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  adjacentWater: { north: boolean; east: boolean; south: boolean; west: boolean }
-): void {
-  const { north, east, south, west } = adjacentWater;
-
-  // Early exit if no adjacent water
-  if (!north && !east && !south && !west) return;
-
-  const beachWidth = TILE_WIDTH * BEACH_CONFIG.widthRatio;
-  const corners = getDiamondCorners(x, y);
-
-  // Draw beach edges for sides adjacent to water
-  // Each edge connects two corners and has an inward direction
-
-  // North edge (top-left: left corner → top corner)
-  if (north) {
-    const inward = BEACH_INWARD_VECTORS.north;
-    drawBeachEdge(
-      ctx,
-      corners.left.x, corners.left.y,
-      corners.top.x, corners.top.y,
-      inward.dx, inward.dy,
-      beachWidth,
-      west,  // Shorten at left if west also has beach
-      east   // Shorten at top if east also has beach
-    );
-  }
-
-  // East edge (top-right: top corner → right corner)
-  if (east) {
-    const inward = BEACH_INWARD_VECTORS.east;
-    drawBeachEdge(
-      ctx,
-      corners.top.x, corners.top.y,
-      corners.right.x, corners.right.y,
-      inward.dx, inward.dy,
-      beachWidth,
-      north, // Shorten at top if north also has beach
-      south  // Shorten at right if south also has beach
-    );
-  }
-
-  // South edge (bottom-right: right corner → bottom corner)
-  if (south) {
-    const inward = BEACH_INWARD_VECTORS.south;
-    drawBeachEdge(
-      ctx,
-      corners.right.x, corners.right.y,
-      corners.bottom.x, corners.bottom.y,
-      inward.dx, inward.dy,
-      beachWidth,
-      east,  // Shorten at right if east also has beach
-      west   // Shorten at bottom if west also has beach
-    );
-  }
-
-  // West edge (bottom-left: bottom corner → left corner)
-  if (west) {
-    const inward = BEACH_INWARD_VECTORS.west;
-    drawBeachEdge(
-      ctx,
-      corners.bottom.x, corners.bottom.y,
-      corners.left.x, corners.left.y,
-      inward.dx, inward.dy,
-      beachWidth,
-      south, // Shorten at bottom if south also has beach
-      north  // Shorten at left if north also has beach
-    );
-  }
-
-  // Draw corner pieces where two beach edges meet
-  // Top corner (north + east)
-  if (north && east) {
-    drawBeachCorner(
-      ctx,
-      corners.top,
-      corners.left,
-      BEACH_INWARD_VECTORS.north,
-      corners.right,
-      BEACH_INWARD_VECTORS.east,
-      beachWidth
-    );
-  }
-
-  // Right corner (east + south)
-  if (east && south) {
-    drawBeachCorner(
-      ctx,
-      corners.right,
-      corners.top,
-      BEACH_INWARD_VECTORS.east,
-      corners.bottom,
-      BEACH_INWARD_VECTORS.south,
-      beachWidth
-    );
-  }
-
-  // Bottom corner (south + west)
-  if (south && west) {
-    drawBeachCorner(
-      ctx,
-      corners.bottom,
-      corners.right,
-      BEACH_INWARD_VECTORS.south,
-      corners.left,
-      BEACH_INWARD_VECTORS.west,
-      beachWidth
-    );
-  }
-
-  // Left corner (west + north)
-  if (west && north) {
-    drawBeachCorner(
-      ctx,
-      corners.left,
-      corners.bottom,
-      BEACH_INWARD_VECTORS.west,
-      corners.top,
-      BEACH_INWARD_VECTORS.north,
-      beachWidth
-    );
-  }
-}
-
-// ============================================================================
-// Beach on Water Tiles
-// ============================================================================
-
-/** Outward direction vectors for beach edges on water tiles (pointing toward tile edge) */
-const BEACH_OUTWARD_VECTORS: Record<BeachEdge, { dx: number; dy: number }> = {
-  north: { dx: -0.707, dy: -0.707 },  // Points toward north edge
-  east: { dx: 0.707, dy: -0.707 },    // Points toward east edge
-  south: { dx: 0.707, dy: 0.707 },    // Points toward south edge
-  west: { dx: -0.707, dy: 0.707 },    // Points toward west edge
-};
 
 /**
  * Draw a beach edge on a water tile (beach strip at the edge facing land).

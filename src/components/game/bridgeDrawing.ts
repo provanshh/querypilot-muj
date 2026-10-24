@@ -13,7 +13,7 @@ import { RAIL_COLORS, TRACK_GAUGE_RATIO, TRACK_SEPARATION_RATIO } from './railSy
 // ============================================================================
 
 /** Bridge style configuration for rendering */
-export interface BridgeStyle {
+interface BridgeStyle {
   asphalt: string;
   barrier: string;
   accent: string;
@@ -22,7 +22,7 @@ export interface BridgeStyle {
 }
 
 /** Bridge edge geometry for rendering */
-export interface BridgeEdges {
+interface BridgeEdges {
   northEdge: { x: number; y: number };
   eastEdge: { x: number; y: number };
   southEdge: { x: number; y: number };
@@ -45,7 +45,7 @@ export interface BridgeEdges {
  * Bridge styles by type and variant
  * Each bridge type has multiple visual variants with different color schemes
  */
-export const BRIDGE_STYLES: Record<string, BridgeStyle[]> = {
+const BRIDGE_STYLES: Record<string, BridgeStyle[]> = {
   small: [
     { asphalt: ROAD_COLORS.ASPHALT, barrier: '#707070', accent: '#606060', support: '#404040' },
     { asphalt: '#454545', barrier: '#606060', accent: '#555555', support: '#353535' },
@@ -74,14 +74,14 @@ export const BRIDGE_STYLES: Record<string, BridgeStyle[]> = {
 /**
  * Get the bridge style for a given bridge type and variant
  */
-export function getBridgeStyle(bridgeType: string, variant: number): BridgeStyle {
+function getBridgeStyle(bridgeType: string, variant: number): BridgeStyle {
   return BRIDGE_STYLES[bridgeType]?.[variant] || BRIDGE_STYLES.large[0];
 }
 
 /**
  * Get the deck fill color for a bridge (different for rail vs road)
  */
-export function getBridgeDeckColor(isRailBridge: boolean, style: BridgeStyle): string {
+function getBridgeDeckColor(isRailBridge: boolean, style: BridgeStyle): string {
   return isRailBridge ? RAIL_COLORS.BRIDGE_DECK : style.asphalt;
 }
 
@@ -89,7 +89,7 @@ export function getBridgeDeckColor(isRailBridge: boolean, style: BridgeStyle): s
  * Calculate bridge geometry for rendering
  * Returns edge points and perpendicular vectors for drawing the bridge
  */
-export function calculateBridgeEdges(
+function calculateBridgeEdges(
   x: number,
   y: number,
   adjustedY: number,
@@ -147,21 +147,21 @@ export function calculateBridgeEdges(
 /**
  * Calculate bridge width ratio based on whether it's a rail or road bridge
  */
-export function getBridgeWidthRatio(isRailBridge: boolean): number {
+function getBridgeWidthRatio(isRailBridge: boolean): number {
   return isRailBridge ? 0.36 : 0.45;
 }
 
 /**
  * Get the Y offset for rail bridges (they're shifted down slightly)
  */
-export function getRailBridgeYOffset(isRailBridge: boolean): number {
+function getRailBridgeYOffset(isRailBridge: boolean): number {
   return isRailBridge ? TILE_HEIGHT * 0.1 : 0;
 }
 
 /**
  * Parse building properties for bridge rendering
  */
-export function parseBridgeProperties(building: Building) {
+function parseBridgeProperties(building: Building) {
   const bridgeType = building.bridgeType || 'large';
   const orientation = (building.bridgeOrientation || 'ns') as 'ns' | 'ew';
   const variant = building.bridgeVariant || 0;
@@ -190,7 +190,7 @@ export function parseBridgeProperties(building: Building) {
 /**
  * Draw a 3D isometric support pillar
  */
-export function drawPillar(
+function drawPillar(
   ctx: CanvasRenderingContext2D,
   px: number,
   py: number,
@@ -227,39 +227,6 @@ export function drawPillar(
   ctx.lineTo(px - pillarW, py);
   ctx.closePath();
   ctx.fill();
-}
-
-// ============================================================================
-// Suspension Tower Drawing  
-// ============================================================================
-
-/**
- * Draw a 3D isometric suspension bridge tower
- */
-export function drawSuspensionTower(
-  ctx: CanvasRenderingContext2D,
-  px: number,
-  py: number,
-  towerW: number,
-  towerH: number,
-  color: string
-): void {
-  // Draw back column (left)
-  ctx.fillStyle = color;
-  ctx.fillRect(px - towerW * 0.6, py - towerH, towerW * 0.4, towerH);
-  
-  // Draw front column (right)
-  ctx.fillRect(px + towerW * 0.2, py - towerH, towerW * 0.4, towerH);
-  
-  // Draw crossbeam at top
-  ctx.fillRect(px - towerW * 0.6, py - towerH, towerW * 1.2, towerW * 0.4);
-  
-  // Add 3D shading to front column
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-  ctx.fillRect(px + towerW * 0.2, py - towerH, towerW * 0.15, towerH);
-  
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-  ctx.fillRect(px + towerW * 0.45, py - towerH, towerW * 0.15, towerH);
 }
 
 // ============================================================================

@@ -127,7 +127,7 @@ export async function loadImage(src: string): Promise<HTMLImageElement> {
  * @param threshold Maximum color distance to consider as background (default: COLOR_THRESHOLD)
  * @returns A new HTMLImageElement with filtered colors made transparent
  */
-export function filterBackgroundColor(img: HTMLImageElement, threshold: number = COLOR_THRESHOLD): Promise<HTMLImageElement> {
+function filterBackgroundColor(img: HTMLImageElement, threshold: number = COLOR_THRESHOLD): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     try {
       console.log('Starting background color filtering...', { 
@@ -226,16 +226,6 @@ export function loadSpriteImage(src: string, applyFilter: boolean = true): Promi
 }
 
 /**
- * Check if an image is cached
- * @param src The image source path
- * @param filtered Whether to check for the filtered version
- */
-export function isImageCached(src: string, filtered: boolean = false): boolean {
-  const cacheKey = filtered ? `${src}_filtered` : src;
-  return imageCache.has(cacheKey);
-}
-
-/**
  * Get a cached image if available
  * @param src The image source path
  * @param filtered Whether to get the filtered version
@@ -243,11 +233,4 @@ export function isImageCached(src: string, filtered: boolean = false): boolean {
 export function getCachedImage(src: string, filtered: boolean = false): HTMLImageElement | undefined {
   const cacheKey = filtered ? `${src}_filtered` : src;
   return imageCache.get(cacheKey);
-}
-
-/**
- * Clear the image cache
- */
-export function clearImageCache(): void {
-  imageCache.clear();
 }

@@ -46,7 +46,7 @@ export const SPORTS_TYPES: BuildingType[] = [
 ];
 
 // Recreation areas where pedestrians relax
-export const RELAXATION_TYPES: BuildingType[] = [
+const RELAXATION_TYPES: BuildingType[] = [
   'park', 'park_large', 'community_garden', 'pond_park', 'greenhouse_garden',
   'amphitheater', 'campground', 'marina_docks_small', 'pier_large'
 ];
@@ -67,16 +67,16 @@ const ENTERABLE_BUILDING_TYPES: BuildingType[] = [
 ];
 
 // Recreation area types for more specific destination finding
-export type RecreationType = 'sports' | 'relaxation' | 'active' | 'general';
+type RecreationType = 'sports' | 'relaxation' | 'active' | 'general';
 
-export interface RecreationDestination {
+interface RecreationDestination {
   x: number;
   y: number;
   type: RecreationType;
   buildingType: BuildingType;
 }
 
-export interface HeliportInfo {
+interface HeliportInfo {
   x: number;
   y: number;
   type: 'hospital' | 'airport' | 'police' | 'mall';
@@ -89,7 +89,7 @@ export interface DockInfo {
   type: 'marina' | 'pier';
 }
 
-export interface PedestrianDestination {
+interface PedestrianDestination {
   x: number;
   y: number;
   type: PedestrianDestType;
@@ -196,34 +196,6 @@ export function findEnterableBuildings(
     }
   }
   return buildings;
-}
-
-/**
- * Check if a building type is a sports facility
- */
-export function isSportsFacility(buildingType: BuildingType): boolean {
-  return SPORTS_TYPES.includes(buildingType);
-}
-
-/**
- * Check if a building type is a relaxation area
- */
-export function isRelaxationArea(buildingType: BuildingType): boolean {
-  return RELAXATION_TYPES.includes(buildingType);
-}
-
-/**
- * Check if a building type is enterable
- */
-export function isEnterableBuilding(buildingType: BuildingType): boolean {
-  return ENTERABLE_BUILDING_TYPES.includes(buildingType);
-}
-
-/**
- * Check if a building type is a park/recreation area
- */
-export function isRecreationArea(buildingType: BuildingType): boolean {
-  return PARK_TYPES.has(buildingType);
 }
 
 /**
@@ -460,7 +432,7 @@ export function findOceanConnectedMarinas(
   return oceanMarinas;
 }
 
-export interface OceanSpawnPoint {
+interface OceanSpawnPoint {
   x: number;
   y: number;
   screenX: number;
@@ -687,7 +659,7 @@ export function isOverWater(
 /**
  * Find all connected water tiles from a starting water tile using BFS
  */
-export function findConnectedWaterTiles(
+function findConnectedWaterTiles(
   grid: Tile[][],
   gridSize: number,
   startTileX: number,
@@ -912,43 +884,4 @@ export function getRandomBayTile(bay: BayInfo): { x: number; y: number; screenX:
     screenX: screenX + TILE_WIDTH / 2,
     screenY: screenY + TILE_HEIGHT / 2,
   };
-}
-
-/**
- * Calculate total population from the grid (with caching support)
- */
-export function calculateTotalPopulation(
-  grid: Tile[][],
-  gridSize: number
-): number {
-  if (!grid || gridSize <= 0) return 0;
-
-  let total = 0;
-  for (let y = 0; y < gridSize; y++) {
-    for (let x = 0; x < gridSize; x++) {
-      total += grid[y][x].building.population || 0;
-    }
-  }
-  return total;
-}
-
-/**
- * Count road tiles in the grid (with caching support)
- */
-export function countRoadTiles(
-  grid: Tile[][],
-  gridSize: number
-): number {
-  if (!grid || gridSize <= 0) return 0;
-
-  let count = 0;
-  for (let y = 0; y < gridSize; y++) {
-    for (let x = 0; x < gridSize; x++) {
-      const type = grid[y][x].building.type;
-      if (type === 'road' || type === 'bridge') {
-        count++;
-      }
-    }
-  }
-  return count;
 }

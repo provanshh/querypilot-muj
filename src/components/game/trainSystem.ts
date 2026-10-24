@@ -4,7 +4,7 @@
  */
 
 import { Tile } from '@/types/game';
-import { Train, TrainCarriage, CarriageType, TrainType, CarDirection, TILE_WIDTH, TILE_HEIGHT, TrainSmokeParticle } from './types';
+import { Train, TrainCarriage, CarriageType, TrainType, CarDirection, TILE_WIDTH, TILE_HEIGHT } from './types';
 import {
   DIRECTION_META,
   OPPOSITE_DIRECTION,
@@ -170,10 +170,10 @@ export const TRAIN_SPAWN_INTERVAL = 1.5;
 export const TRAIN_SPAWN_INTERVAL_MOBILE = 4.0; // Slower spawning on mobile
 
 /** Station stop duration in seconds */
-export const STATION_STOP_DURATION = 2.0;
+const STATION_STOP_DURATION = 2.0;
 
 /** Train maximum age in seconds */
-export const TRAIN_MAX_AGE = 120;
+const TRAIN_MAX_AGE = 120;
 
 /** Safe following distance in tile units (triggers slowdown) */
 const SAFE_FOLLOWING_DISTANCE = 0.8;
@@ -182,13 +182,13 @@ const SAFE_FOLLOWING_DISTANCE = 0.8;
 const MIN_FOLLOWING_SPEED = 0.3;
 
 /** Carriage count for train types */
-export const TRAIN_CARRIAGE_COUNTS = {
+const TRAIN_CARRIAGE_COUNTS = {
   passenger: { min: 5, max: 8 },
   freight: { min: 6, max: 10 },
 };
 
 /** Carriage spacing (in tile progress units) - spacing between carriages */
-export const CARRIAGE_SPACING = 0.28;
+const CARRIAGE_SPACING = 0.28;
 
 // ============================================================================
 // Train Creation Functions

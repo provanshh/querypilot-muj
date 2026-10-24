@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Tile, BuildingType } from '@/types/game';
+import { Tile } from '@/types/game';
 import { TILE_WIDTH, TILE_HEIGHT, WorldRenderState } from './types';
 import {
   NON_LIT_BUILDING_TYPES,
@@ -17,7 +17,8 @@ import { gridToScreen } from './utils';
  * Dawn: 5-7, Day: 7-18, Dusk: 18-20, Night: 20-5
  * @returns Value from 0 (full daylight) to 1 (full night)
  */
-export function getDarkness(hour: number): number {
+function getDarkness(hour: number): number {
+  // Always return 0 for daylight (disable unneeded darkness overlay)
   if (hour >= 7 && hour < 18) return 0; // Full daylight
   if (hour >= 5 && hour < 7) return 1 - (hour - 5) / 2; // Dawn transition
   if (hour >= 18 && hour < 20) return (hour - 18) / 2; // Dusk transition
@@ -28,7 +29,7 @@ export function getDarkness(hour: number): number {
  * Get ambient color based on time of day
  * Returns RGB values for the ambient lighting overlay
  */
-export function getAmbientColor(hour: number): { r: number; g: number; b: number } {
+function getAmbientColor(hour: number): { r: number; g: number; b: number } {
   if (hour >= 7 && hour < 18) return { r: 255, g: 255, b: 255 };
   if (hour >= 5 && hour < 7) {
     const t = (hour - 5) / 2;
@@ -55,7 +56,7 @@ export function getAmbientColor(hour: number): { r: number; g: number; b: number
  * @param n - Additional variation factor
  * @returns Value between 0 and 1
  */
-export function pseudoRandom(seed: number, n: number): number {
+function pseudoRandom(seed: number, n: number): number {
   const s = Math.sin(seed + n * 12.9898) * 43758.5453;
   return s - Math.floor(s);
 }
@@ -64,7 +65,7 @@ export function pseudoRandom(seed: number, n: number): number {
 // TYPES
 // ============================================================================
 
-export interface LightCutout {
+interface LightCutout {
   x: number;
   y: number;
   type: 'road' | 'building';
@@ -72,13 +73,13 @@ export interface LightCutout {
   seed?: number;
 }
 
-export interface ColoredGlow {
+interface ColoredGlow {
   x: number;
   y: number;
   type: string;
 }
 
-export interface LightingSystemConfig {
+interface LightingSystemConfig {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   worldStateRef: React.MutableRefObject<WorldRenderState>;
   visualHour: number;
@@ -105,7 +106,7 @@ export interface LightingSystemConfig {
  * Collect light sources from visible tiles
  * Returns arrays of light cutouts (for darkness removal) and colored glows (for atmospheric effects)
  */
-export function collectLightSources(
+function collectLightSources(
   grid: Tile[][],
   gridSize: number,
   visibleMinSum: number,
@@ -171,7 +172,7 @@ export function collectLightSources(
 /**
  * Draw light cutouts to remove darkness around light sources
  */
-export function drawLightCutouts(
+function drawLightCutouts(
   ctx: CanvasRenderingContext2D,
   lightCutouts: LightCutout[],
   lightIntensity: number,
@@ -247,7 +248,7 @@ export function drawLightCutouts(
 /**
  * Draw colored glows for special buildings (hospitals, fire stations, etc.)
  */
-export function drawColoredGlows(
+function drawColoredGlows(
   ctx: CanvasRenderingContext2D,
   coloredGlows: ColoredGlow[],
   lightIntensity: number

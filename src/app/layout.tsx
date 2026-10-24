@@ -1,8 +1,15 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono, Plus_Jakarta_Sans, Silkscreen } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({
+const silkscreen = Silkscreen({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-pixel',
+  display: 'swap',
+});
+
+const sans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
@@ -16,9 +23,9 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://querypilot.dev'),
-  title: "QueryPilot — Don't Just Ask Your Database. Send a Crew.",
+  title: 'QueryPilot: ask a messy database in plain English',
   description:
-    'Gamified Multi-Agent AI Data Analyst Platform. Turn your database into an interactive 3D isometric city and dispatch autonomous AI agent crews to investigate schema anomalies, query patterns, and KPI metrics.',
+    'A multi-agent data analyst that explores a messy database, writes and verifies read-only SQL, and answers business questions, or declines when the data cannot support an answer.',
   applicationName: 'QueryPilot',
   keywords: [
     'QueryPilot',
@@ -30,10 +37,6 @@ export const metadata: Metadata = {
     'Database Schema Map',
   ],
   authors: [{ name: 'QueryPilot Team' }],
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/assets/buildings/residential.png',
-  },
   openGraph: {
     title: "QueryPilot — Don't Just Ask Your Database. Send a Crew.",
     description:
@@ -63,7 +66,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`dark ${sans.variable} ${jetbrainsMono.variable} ${silkscreen.variable}`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <link

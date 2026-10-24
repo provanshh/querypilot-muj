@@ -8,15 +8,14 @@
 
 import { Building, BuildingType } from '@/types/game';
 import { SpritePack, getActiveSpritePack, getSpriteCoords, BUILDING_TO_SPRITE, SPRITE_VERTICAL_OFFSETS, SPRITE_HORIZONTAL_OFFSETS } from '@/lib/renderConfig';
-import { getBuildingSize, requiresWaterAdjacency } from '@/lib/simulation';
-import { TILE_WIDTH, TILE_HEIGHT } from './types';
+import { getBuildingSize } from '@/lib/simulation';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 /** Result of sprite source selection */
-export interface SpriteSourceResult {
+interface SpriteSourceResult {
   /** Path to the sprite sheet to use */
   source: string;
   /** Type of variant being used */
@@ -26,32 +25,11 @@ export interface SpriteSourceResult {
 }
 
 /** Sprite coordinates within a sheet */
-export interface SpriteCoords {
+interface SpriteCoords {
   sx: number;
   sy: number;
   sw: number;
   sh: number;
-}
-
-/** Calculated sprite positioning and sizing */
-export interface SpritePositioning {
-  /** Draw position X */
-  drawX: number;
-  /** Draw position Y */
-  drawY: number;
-  /** Destination width */
-  destWidth: number;
-  /** Destination height */
-  destHeight: number;
-}
-
-/** Full sprite render info combining source, coords, and positioning */
-export interface SpriteRenderInfo {
-  source: SpriteSourceResult;
-  coords: SpriteCoords | null;
-  positioning: SpritePositioning;
-  /** Whether the sprite should be horizontally flipped */
-  shouldFlip: boolean;
 }
 
 // ============================================================================
@@ -754,108 +732,4 @@ export function calculateSpriteOffsets(
   }
   
   return { vertical: verticalOffset, horizontal: horizontalOffset };
-}
-
-// ============================================================================
-// Combined Sprite Render Info
-// ============================================================================
-
-/**
- * Get complete sprite rendering information for a building.
- * Combines source selection, coordinate calculation, and positioning.
- */
-export function getSpriteRenderInfo(
-  buildingType: BuildingType,
-  building: Building,
-  tileX: number,
-  tileY: number,
-  screenX: number,
-  screenY: number,
-  sheetWidth: number,
-  sheetHeight: number,
-  options: {
-    hasAdjacentRoad?: boolean;
-    shouldFlipForRoad?: boolean;
-  } = {},
-  activePack: SpritePack = getActiveSpritePack()
-): SpriteRenderInfo | null {
-  // Select sprite source
-  const source = selectSpriteSource(buildingType, building, tileX, tileY, activePack);
-  
-  // Calculate coordinates
-  const coords = calculateSpriteCoords(buildingType, source, sheetWidth, sheetHeight, activePack);
-  if (!coords) {
-    return null;
-  }
-  
-  // Calculate scale
-  const scaleMultiplier = calculateSpriteScale(buildingType, source, building, activePack);
-  
-  // Calculate offsets
-  const offsets = calculateSpriteOffsets(buildingType, source, building, activePack);
-  
-  // Calculate destination size
-  const w = TILE_WIDTH;
-  const h = TILE_HEIGHT;
-  const destWidth = w * 1.2 * scaleMultiplier;
-  const aspectRatio = coords.sh / coords.sw;
-  const destHeight = destWidth * aspectRatio;
-  
-  // Calculate position
-  const buildingSize = getBuildingSize(buildingType);
-  const isMultiTile = buildingSize.width > 1 || buildingSize.height > 1;
-  
-  let drawPosX = screenX;
-  let drawPosY = screenY;
-  
-  if (isMultiTile) {
-    const frontmostOffsetX = buildingSize.width - 1;
-    const frontmostOffsetY = buildingSize.height - 1;
-    const screenOffsetX = (frontmostOffsetX - frontmostOffsetY) * (w / 2);
-    const screenOffsetY = (frontmostOffsetX + frontmostOffsetY) * (h / 2);
-    drawPosX = screenX + screenOffsetX;
-    drawPosY = screenY + screenOffsetY;
-  }
-  
-  // Apply offsets
-  const drawX = drawPosX + w / 2 - destWidth / 2 + offsets.horizontal * w;
-  
-  let verticalPush: number;
-  if (isMultiTile) {
-    const footprintDepth = buildingSize.width + buildingSize.height - 2;
-    verticalPush = footprintDepth * h * 0.25;
-  } else {
-    verticalPush = destHeight * 0.15;
-  }
-  verticalPush += offsets.vertical * h;
-  
-  const drawY = drawPosY + h - destHeight + verticalPush;
-  
-  // Determine flip - waterfront assets should never be mirrored
-  const isWaterfrontAsset = requiresWaterAdjacency(buildingType);
-  const shouldRoadMirror = (() => {
-    if (isWaterfrontAsset) return false;
-    
-    if (options.hasAdjacentRoad) {
-      return options.shouldFlipForRoad ?? false;
-    }
-    // Deterministic random mirroring for visual variety
-    const mirrorSeed = (tileX * 47 + tileY * 83) % 100;
-    return mirrorSeed < 50;
-  })();
-  
-  const baseFlipped = building.flipped === true;
-  const shouldFlip = baseFlipped !== shouldRoadMirror;
-  
-  return {
-    source,
-    coords,
-    positioning: {
-      drawX,
-      drawY,
-      destWidth,
-      destHeight,
-    },
-    shouldFlip,
-  };
 }

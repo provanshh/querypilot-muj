@@ -12,6 +12,9 @@ node_modules/
 /dist/
 /build/
 
+# Prisma client (regenerated on install)
+/src/generated/
+
 # Production
 build/
 
@@ -37,15 +40,6 @@ credentials.json
 *.cert
 *.sqlite
 *.db
-
-# Python / FastAPI
-__pycache__/
-*.py[cod]
-*$py.class
-.venv/
-venv/
-env/
-.pytest_cache/
 
 # Local cache & temp
 .turbo

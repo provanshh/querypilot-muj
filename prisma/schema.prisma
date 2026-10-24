@@ -1,0 +1,110 @@
+// App bookkeeping lives in the qp_meta schema. Uploaded data lives in per-upload schemas created at
+// runtime, which the agents read with read-only SQL.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["qp_meta"]
+}
+
+/// One agent run (a question or an audit), with its final verdict.
+model Run {
+  id         String    @id
+  island     String
+  question   String
+  status     String    @default("running")
+  answer     String?
+  engine     String?
+  startedAt  DateTime? @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+  verdict    Json?
+  source     String?
+  mode       String?
+
+  @@index([startedAt(sort: Desc)], map: "runs_started_idx")
+  @@map("runs")
+  @@schema("qp_meta")
+}
+
+/// The event log every UI replays: one row per agent event.
+model Event {
+  runId    String   @map("run_id")
+  seq      Int
+  ts       DateTime @db.Timestamptz(6)
+  type     String
+  agentId  String?  @map("agent_id")
+  summary  String?
+  tableIds String[] @map("table_ids")
+  metadata Json?
+
+  @@id([runId, seq])
+  @@map("events")
+  @@schema("qp_meta")
+}
+
+/// A CSV upload; its rows live in their own up_* schema.
+model Upload {
+  id         String    @id
+  name       String
+  schemaName String    @map("schema_name")
+  tableName  String    @map("table_name")
+  rowCount   Int?      @map("row_count")
+  colCount   Int?      @map("col_count")
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("uploads")
+  @@schema("qp_meta")
+}
+
+/// Telegram chats the bot talks to.
+model TgChat {
+  chatId    BigInt    @id @map("chat_id")
+  title     String?
+  dataset   String?
+  follow    Boolean   @default(true)
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("tg_chats")
+  @@schema("qp_meta")
+}
+
+/// The master/worker queue: the Mayor (master) enqueues one task per agent step; worker processes
+/// claim tasks with FOR UPDATE SKIP LOCKED, run them and write the output back.
+model AgentTask {
+  id         String    @id
+  runId      String    @map("run_id")
+  agent      String
+  kind       String
+  status     String    @default("queued")
+  input      Json
+  output     Json?
+  error      String?
+  attempts   Int       @default(0)
+  workerId   String?   @map("worker_id")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  startedAt  DateTime? @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+
+  @@index([status, agent, createdAt], map: "agent_tasks_claim_idx")
+  @@index([runId], map: "agent_tasks_run_idx")
+  @@map("agent_tasks")
+  @@schema("qp_meta")
+}
+
+/// Worker processes and the agents they serve; a heartbeat keeps lastSeen fresh.
+model AgentWorker {
+  id        String   @id
+  agents    String[]
+  host      String
+  pid       Int
+  startedAt DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+  lastSeen  DateTime @default(now()) @map("last_seen") @db.Timestamptz(6)
+  tasksDone Int      @default(0) @map("tasks_done")
+
+  @@map("agent_workers")
+  @@schema("qp_meta")
+}

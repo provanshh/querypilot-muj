@@ -4,7 +4,7 @@
  * OPTIMIZED for performance with LOD (Level of Detail)
  */
 
-import { Pedestrian, PedestrianActivity, TILE_WIDTH, TILE_HEIGHT } from './types';
+import { Pedestrian, TILE_WIDTH, TILE_HEIGHT } from './types';
 import { DIRECTION_META } from './constants';
 import { gridToScreen } from './utils';
 import { getPedestrianOpacity, getVisiblePedestrians } from './pedestrianSystem';
@@ -62,7 +62,7 @@ function drawHair(ctx: CanvasRenderingContext2D, headX: number, headY: number, h
  * - 'recreation': Pedestrians at recreation, beach, or shops (drawn on top of buildings)
  * - 'non-recreation': Walking pedestrians not at destinations (drawn below buildings)
  */
-export type PedestrianFilterMode = 'all' | 'recreation' | 'non-recreation';
+type PedestrianFilterMode = 'all' | 'recreation' | 'non-recreation';
 
 /**
  * Draw pedestrians with dynamic activities and states

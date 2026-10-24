@@ -11,7 +11,7 @@ import { TILE_WIDTH, TILE_HEIGHT, CarDirection } from './types';
 // ============================================================================
 
 /** Rail track connection pattern */
-export type RailConnection = {
+type RailConnection = {
   north: boolean;
   east: boolean;
   south: boolean;
@@ -35,47 +35,7 @@ export type TrackType =
   | 'terminus_e'      // Dead-end facing east
   | 'terminus_s'      // Dead-end facing south
   | 'terminus_w'      // Dead-end facing west
-  | 'single';         // Isolated single track
-
-/** Train carriage type */
-export type CarriageType = 'locomotive' | 'passenger' | 'freight_box' | 'freight_tank' | 'freight_flat' | 'caboose';
-
-/** Train type */
-export type TrainType = 'passenger' | 'freight';
-
-/** Individual train carriage */
-export interface TrainCarriage {
-  type: CarriageType;
-  color: string;
-  // Position along the train's path (0-1 within current tile segment)
-  progress: number;
-  // Current tile position
-  tileX: number;
-  tileY: number;
-  // Direction of travel
-  direction: CarDirection;
-}
-
-/** Complete train with multiple carriages */
-export interface Train {
-  id: number;
-  type: TrainType;
-  carriages: TrainCarriage[];
-  // Lead locomotive position
-  tileX: number;
-  tileY: number;
-  direction: CarDirection;
-  progress: number;
-  speed: number;
-  // Path for the train
-  path: { x: number; y: number }[];
-  pathIndex: number;
-  // Lifecycle
-  age: number;
-  maxAge: number;
-  // Visual
-  color: string;
-}
+  | 'single';
 
 // ============================================================================
 // Constants
@@ -127,10 +87,10 @@ export const PASSENGER_COLORS = [
 export const TRACK_GAUGE_RATIO = 0.06;
 
 /** Ballast width as ratio of tile width - wider for visibility */
-export const BALLAST_WIDTH_RATIO = 0.18;
+const BALLAST_WIDTH_RATIO = 0.18;
 
 /** Number of ties per tile */
-export const TIES_PER_TILE = 7;
+const TIES_PER_TILE = 7;
 
 /** Separation between the two parallel tracks as ratio of tile width */
 export const TRACK_SEPARATION_RATIO = 0.22;
@@ -145,7 +105,7 @@ export const TRAIN_CAR = {
 };
 
 /** Which track a train uses based on direction (0 = left/inner, 1 = right/outer) */
-export type TrackSide = 0 | 1;
+type TrackSide = 0 | 1;
 
 /** Get which track side a train should use based on its direction */
 export function getTrackSide(direction: CarDirection): TrackSide {
@@ -1071,7 +1031,7 @@ export function drawRailTrack(
  * Get adjacent rail connections for a combined rail+road tile
  * Checks for both pure rail tiles AND road tiles with rail overlay
  */
-export function getAdjacentRailForOverlay(
+function getAdjacentRailForOverlay(
   grid: Tile[][],
   gridSize: number,
   x: number,
@@ -1355,27 +1315,16 @@ function drawInsetRails(
 // ============================================================================
 
 /** Railroad crossing state */
-export type CrossingState = 'open' | 'warning' | 'closed';
-
-/** Railroad crossing information */
-export interface RailroadCrossing {
-  tileX: number;
-  tileY: number;
-  state: CrossingState;
-  gateAngle: number; // 0 = up (open), 90 = down (closed)
-  flashTimer: number; // For alternating lights
-  trainApproaching: boolean;
-  trainDistance: number; // Distance in tiles to nearest approaching train
-}
+type CrossingState = 'open' | 'warning' | 'closed';
 
 /** Detection radius for triggering crossing warning */
-export const CROSSING_WARNING_DISTANCE = 3; // tiles
+const CROSSING_WARNING_DISTANCE = 3; // tiles
 
 /** Gate animation speed (degrees per second) */
 export const GATE_ANIMATION_SPEED = 180; // Takes 0.5s to close/open
 
 /** Crossing light flash interval */
-export const CROSSING_FLASH_INTERVAL = 0.5; // seconds
+const CROSSING_FLASH_INTERVAL = 0.5; // seconds
 
 /**
  * Check if a tile has road at position (for crossing detection)
@@ -1459,7 +1408,7 @@ export function findRailroadCrossings(grid: Tile[][], gridSize: number): { x: nu
 /**
  * Get the rail track orientation at a crossing (NS or EW)
  */
-export function getCrossingRailOrientation(
+function getCrossingRailOrientation(
   grid: Tile[][],
   gridSize: number,
   x: number,
@@ -1479,7 +1428,7 @@ export function getCrossingRailOrientation(
 // ============================================================================
 
 /** Crossing signal colors */
-export const CROSSING_COLORS = {
+const CROSSING_COLORS = {
   POLE: '#374151',           // Dark gray pole
   LIGHT_OFF: '#1f2937',      // Inactive light
   LIGHT_RED: '#ef4444',      // Active red light
@@ -1492,7 +1441,7 @@ export const CROSSING_COLORS = {
 /**
  * Draw a railroad crossing signal (pole with flashing lights, no crossbuck)
  */
-export function drawCrossingSignal(
+function drawCrossingSignal(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -1573,7 +1522,7 @@ export function drawCrossingSignal(
  * @param swingDirOverride - Optional override for swing direction (1 = right, -1 = left)
  * @param tiltOverride - Optional override for tilt angle when closed
  */
-export function drawCrossingGate(
+function drawCrossingGate(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -1788,7 +1737,7 @@ export function countRailTiles(
  * @param warningDistance - How many tiles away to trigger warning
  * @returns Object with isApproaching flag and distance to nearest train
  */
-export function isTrainApproachingTile(
+function isTrainApproachingTile(
   trains: { 
     tileX: number; 
     tileY: number; 
@@ -1897,57 +1846,4 @@ export function shouldStopAtCrossing(
 ): boolean {
   const state = getCrossingStateForTile(trains, crossingX, crossingY);
   return state === 'closed' || state === 'warning';
-}
-
-/**
- * Find path on rail network between two points
- */
-export function findPathOnRails(
-  grid: Tile[][],
-  gridSize: number,
-  startX: number,
-  startY: number,
-  endX: number,
-  endY: number
-): { x: number; y: number }[] | null {
-  // BFS pathfinding on rail network
-  const queue: { x: number; y: number; path: { x: number; y: number }[] }[] = [
-    { x: startX, y: startY, path: [{ x: startX, y: startY }] }
-  ];
-  const visited = new Set<string>();
-  visited.add(`${startX},${startY}`);
-
-  const directions = [
-    { dx: -1, dy: 0 },  // north
-    { dx: 0, dy: -1 },  // east
-    { dx: 1, dy: 0 },   // south
-    { dx: 0, dy: 1 },   // west
-  ];
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-
-    if (current.x === endX && current.y === endY) {
-      return current.path;
-    }
-
-    for (const { dx, dy } of directions) {
-      const nx = current.x + dx;
-      const ny = current.y + dy;
-      const key = `${nx},${ny}`;
-
-      if (nx < 0 || ny < 0 || nx >= gridSize || ny >= gridSize) continue;
-      if (visited.has(key)) continue;
-      if (!isRailTile(grid, gridSize, nx, ny) && !isRailStationTile(grid, gridSize, nx, ny)) continue;
-
-      visited.add(key);
-      queue.push({
-        x: nx,
-        y: ny,
-        path: [...current.path, { x: nx, y: ny }],
-      });
-    }
-  }
-
-  return null;
 }

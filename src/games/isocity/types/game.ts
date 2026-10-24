@@ -2,7 +2,6 @@
  * IsoCity Game State Types
  */
 
-import { msg } from 'gt-next';
 import { Building } from './buildings';
 import { ZoneType } from './zones';
 import { Stats, Budget, CityEconomy, HistoryPoint } from './economy';
@@ -25,7 +24,7 @@ export type Tool =
   | 'marina_docks_small' | 'pier_large' | 'roller_coaster_small'
   | 'community_garden' | 'pond_park' | 'park_gate' | 'mountain_lodge' | 'mountain_trailhead';
 
-export interface ToolInfo {
+interface ToolInfo {
   name: string;
   cost: number;
   description: string;
@@ -33,65 +32,65 @@ export interface ToolInfo {
 }
 
 export const TOOL_INFO: Record<Tool, ToolInfo> = {
-  select: { name: msg('Select'), cost: 0, description: msg('Click to view tile info') },
-  bulldoze: { name: msg('Bulldoze'), cost: 10, description: msg('Remove buildings and zones') },
-  road: { name: msg('Road'), cost: 25, description: msg('Connect your city') },
-  rail: { name: msg('Rail'), cost: 40, description: msg('Build railway tracks') },
-  subway: { name: msg('Subway'), cost: 50, description: msg('Underground transit') },
-  expand_city: { name: msg('Expand City'), cost: 0, description: msg('Add 15 tiles to each edge') },
-  shrink_city: { name: msg('Shrink City'), cost: 0, description: msg('Remove 15 tiles from each edge') },
-  tree: { name: msg('Tree'), cost: 15, description: msg('Plant trees to improve environment') },
-  zone_residential: { name: msg('Residential'), cost: 50, description: msg('Zone for housing') },
-  zone_commercial: { name: msg('Commercial'), cost: 50, description: msg('Zone for shops and offices') },
-  zone_industrial: { name: msg('Industrial'), cost: 50, description: msg('Zone for factories') },
-  zone_dezone: { name: msg('De-zone'), cost: 0, description: msg('Remove zoning') },
-  zone_water: { name: msg('Water Terraform'), cost: 50000, description: msg('Terraform land into water') },
-  zone_land: { name: msg('Land Terraform'), cost: 50000, description: msg('Terraform water into land') },
-  police_station: { name: msg('Police'), cost: 500, description: msg('Increase safety'), size: 1 },
-  fire_station: { name: msg('Fire Station'), cost: 500, description: msg('Fight fires'), size: 1 },
-  hospital: { name: msg('Hospital'), cost: 1000, description: msg('Improve health (2x2)'), size: 2 },
-  school: { name: msg('School'), cost: 400, description: msg('Basic education (2x2)'), size: 2 },
-  university: { name: msg('University'), cost: 2000, description: msg('Higher education (3x3)'), size: 3 },
-  park: { name: msg('Small Park'), cost: 150, description: msg('Boost happiness and land value (1x1)'), size: 1 },
-  park_large: { name: msg('Large Park'), cost: 600, description: msg('Large park (3x3)'), size: 3 },
-  tennis: { name: msg('Tennis Court'), cost: 200, description: msg('Recreation facility'), size: 1 },
-  power_plant: { name: msg('Power Plant'), cost: 3000, description: msg('Generate electricity (2x2)'), size: 2 },
-  water_tower: { name: msg('Water Tower'), cost: 1000, description: msg('Provide water'), size: 1 },
-  subway_station: { name: msg('Subway Station'), cost: 750, description: msg('Access to subway network'), size: 1 },
-  rail_station: { name: msg('Rail Station'), cost: 1000, description: msg('Passenger and freight station'), size: 2 },
-  stadium: { name: msg('Stadium'), cost: 5000, description: msg('Boosts commercial demand (3x3)'), size: 3 },
-  museum: { name: msg('Museum'), cost: 4000, description: msg('Boosts commercial & residential demand (3x3)'), size: 3 },
-  airport: { name: msg('Airport'), cost: 10000, description: msg('Boosts commercial & industrial demand (4x4)'), size: 4 },
-  space_program: { name: msg('Space Program'), cost: 15000, description: msg('Boosts industrial & residential demand (3x3)'), size: 3 },
-  city_hall: { name: msg('City Hall'), cost: 6000, description: msg('Boosts all demand types (2x2)'), size: 2 },
-  amusement_park: { name: msg('Amusement Park'), cost: 12000, description: msg('Major boost to commercial demand (4x4)'), size: 4 },
-  basketball_courts: { name: msg('Basketball Courts'), cost: 250, description: msg('Outdoor basketball facility'), size: 1 },
-  playground_small: { name: msg('Small Playground'), cost: 200, description: msg('Children\'s playground'), size: 1 },
-  playground_large: { name: msg('Large Playground'), cost: 350, description: msg('Large playground with more equipment (2x2)'), size: 2 },
-  baseball_field_small: { name: msg('Baseball Field'), cost: 800, description: msg('Local baseball diamond (2x2)'), size: 2 },
-  soccer_field_small: { name: msg('Soccer Field'), cost: 400, description: msg('Soccer/football pitch'), size: 1 },
-  football_field: { name: msg('Football Field'), cost: 1200, description: msg('Football stadium (2x2)'), size: 2 },
-  baseball_stadium: { name: msg('Baseball Stadium'), cost: 6000, description: msg('Professional baseball venue (3x3)'), size: 3 },
-  community_center: { name: msg('Community Center'), cost: 500, description: msg('Local community hub'), size: 1 },
-  office_building_small: { name: msg('Small Office'), cost: 600, description: msg('Small office building'), size: 1 },
-  swimming_pool: { name: msg('Swimming Pool'), cost: 450, description: msg('Public swimming facility'), size: 1 },
-  skate_park: { name: msg('Skate Park'), cost: 300, description: msg('Skateboarding park'), size: 1 },
-  mini_golf_course: { name: msg('Mini Golf'), cost: 700, description: msg('Miniature golf course (2x2)'), size: 2 },
-  bleachers_field: { name: msg('Bleachers Field'), cost: 350, description: msg('Sports field with seating'), size: 1 },
-  go_kart_track: { name: msg('Go-Kart Track'), cost: 1000, description: msg('Racing entertainment (2x2)'), size: 2 },
-  amphitheater: { name: msg('Amphitheater'), cost: 1500, description: msg('Outdoor performance venue (2x2)'), size: 2 },
-  greenhouse_garden: { name: msg('Greenhouse Garden'), cost: 800, description: msg('Botanical greenhouse (2x2)'), size: 2 },
-  animal_pens_farm: { name: msg('Animal Pens'), cost: 400, description: msg('Petting zoo / farm animals'), size: 1 },
-  cabin_house: { name: msg('Cabin House'), cost: 300, description: msg('Rustic cabin retreat'), size: 1 },
-  campground: { name: msg('Campground'), cost: 250, description: msg('Outdoor camping area'), size: 1 },
-  marina_docks_small: { name: msg('Marina'), cost: 1200, description: msg('Boat docks (2x2, must be placed next to water)'), size: 2 },
-  pier_large: { name: msg('Pier'), cost: 600, description: msg('Waterfront pier (must be placed next to water)'), size: 1 },
-  roller_coaster_small: { name: msg('Roller Coaster'), cost: 3000, description: msg('Thrill ride (2x2)'), size: 2 },
-  community_garden: { name: msg('Community Garden'), cost: 200, description: msg('Shared gardening space'), size: 1 },
-  pond_park: { name: msg('Pond Park'), cost: 350, description: msg('Park with scenic pond'), size: 1 },
-  park_gate: { name: msg('Park Gate'), cost: 150, description: msg('Decorative park entrance'), size: 1 },
-  mountain_lodge: { name: msg('Mountain Lodge'), cost: 1500, description: msg('Nature retreat lodge (2x2)'), size: 2 },
-  mountain_trailhead: { name: msg('Trailhead'), cost: 400, description: msg('Hiking trail entrance (3x3)'), size: 3 },
+  select: { name: 'Select', cost: 0, description: 'Click to view tile info' },
+  bulldoze: { name: 'Bulldoze', cost: 10, description: 'Remove buildings and zones' },
+  road: { name: 'Road', cost: 25, description: 'Connect your city' },
+  rail: { name: 'Rail', cost: 40, description: 'Build railway tracks' },
+  subway: { name: 'Subway', cost: 50, description: 'Underground transit' },
+  expand_city: { name: 'Expand City', cost: 0, description: 'Add 15 tiles to each edge' },
+  shrink_city: { name: 'Shrink City', cost: 0, description: 'Remove 15 tiles from each edge' },
+  tree: { name: 'Tree', cost: 15, description: 'Plant trees to improve environment' },
+  zone_residential: { name: 'Residential', cost: 50, description: 'Zone for housing' },
+  zone_commercial: { name: 'Commercial', cost: 50, description: 'Zone for shops and offices' },
+  zone_industrial: { name: 'Industrial', cost: 50, description: 'Zone for factories' },
+  zone_dezone: { name: 'De-zone', cost: 0, description: 'Remove zoning' },
+  zone_water: { name: 'Water Terraform', cost: 50000, description: 'Terraform land into water' },
+  zone_land: { name: 'Land Terraform', cost: 50000, description: 'Terraform water into land' },
+  police_station: { name: 'Police', cost: 500, description: 'Increase safety', size: 1 },
+  fire_station: { name: 'Fire Station', cost: 500, description: 'Fight fires', size: 1 },
+  hospital: { name: 'Hospital', cost: 1000, description: 'Improve health (2x2)', size: 2 },
+  school: { name: 'School', cost: 400, description: 'Basic education (2x2)', size: 2 },
+  university: { name: 'University', cost: 2000, description: 'Higher education (3x3)', size: 3 },
+  park: { name: 'Small Park', cost: 150, description: 'Boost happiness and land value (1x1)', size: 1 },
+  park_large: { name: 'Large Park', cost: 600, description: 'Large park (3x3)', size: 3 },
+  tennis: { name: 'Tennis Court', cost: 200, description: 'Recreation facility', size: 1 },
+  power_plant: { name: 'Power Plant', cost: 3000, description: 'Generate electricity (2x2)', size: 2 },
+  water_tower: { name: 'Water Tower', cost: 1000, description: 'Provide water', size: 1 },
+  subway_station: { name: 'Subway Station', cost: 750, description: 'Access to subway network', size: 1 },
+  rail_station: { name: 'Rail Station', cost: 1000, description: 'Passenger and freight station', size: 2 },
+  stadium: { name: 'Stadium', cost: 5000, description: 'Boosts commercial demand (3x3)', size: 3 },
+  museum: { name: 'Museum', cost: 4000, description: 'Boosts commercial & residential demand (3x3)', size: 3 },
+  airport: { name: 'Airport', cost: 10000, description: 'Boosts commercial & industrial demand (4x4)', size: 4 },
+  space_program: { name: 'Space Program', cost: 15000, description: 'Boosts industrial & residential demand (3x3)', size: 3 },
+  city_hall: { name: 'City Hall', cost: 6000, description: 'Boosts all demand types (2x2)', size: 2 },
+  amusement_park: { name: 'Amusement Park', cost: 12000, description: 'Major boost to commercial demand (4x4)', size: 4 },
+  basketball_courts: { name: 'Basketball Courts', cost: 250, description: 'Outdoor basketball facility', size: 1 },
+  playground_small: { name: 'Small Playground', cost: 200, description: 'Children\'s playground', size: 1 },
+  playground_large: { name: 'Large Playground', cost: 350, description: 'Large playground with more equipment (2x2)', size: 2 },
+  baseball_field_small: { name: 'Baseball Field', cost: 800, description: 'Local baseball diamond (2x2)', size: 2 },
+  soccer_field_small: { name: 'Soccer Field', cost: 400, description: 'Soccer/football pitch', size: 1 },
+  football_field: { name: 'Football Field', cost: 1200, description: 'Football stadium (2x2)', size: 2 },
+  baseball_stadium: { name: 'Baseball Stadium', cost: 6000, description: 'Professional baseball venue (3x3)', size: 3 },
+  community_center: { name: 'Community Center', cost: 500, description: 'Local community hub', size: 1 },
+  office_building_small: { name: 'Small Office', cost: 600, description: 'Small office building', size: 1 },
+  swimming_pool: { name: 'Swimming Pool', cost: 450, description: 'Public swimming facility', size: 1 },
+  skate_park: { name: 'Skate Park', cost: 300, description: 'Skateboarding park', size: 1 },
+  mini_golf_course: { name: 'Mini Golf', cost: 700, description: 'Miniature golf course (2x2)', size: 2 },
+  bleachers_field: { name: 'Bleachers Field', cost: 350, description: 'Sports field with seating', size: 1 },
+  go_kart_track: { name: 'Go-Kart Track', cost: 1000, description: 'Racing entertainment (2x2)', size: 2 },
+  amphitheater: { name: 'Amphitheater', cost: 1500, description: 'Outdoor performance venue (2x2)', size: 2 },
+  greenhouse_garden: { name: 'Greenhouse Garden', cost: 800, description: 'Botanical greenhouse (2x2)', size: 2 },
+  animal_pens_farm: { name: 'Animal Pens', cost: 400, description: 'Petting zoo / farm animals', size: 1 },
+  cabin_house: { name: 'Cabin House', cost: 300, description: 'Rustic cabin retreat', size: 1 },
+  campground: { name: 'Campground', cost: 250, description: 'Outdoor camping area', size: 1 },
+  marina_docks_small: { name: 'Marina', cost: 1200, description: 'Boat docks (2x2, must be placed next to water)', size: 2 },
+  pier_large: { name: 'Pier', cost: 600, description: 'Waterfront pier (must be placed next to water)', size: 1 },
+  roller_coaster_small: { name: 'Roller Coaster', cost: 3000, description: 'Thrill ride (2x2)', size: 2 },
+  community_garden: { name: 'Community Garden', cost: 200, description: 'Shared gardening space', size: 1 },
+  pond_park: { name: 'Pond Park', cost: 350, description: 'Park with scenic pond', size: 1 },
+  park_gate: { name: 'Park Gate', cost: 150, description: 'Decorative park entrance', size: 1 },
+  mountain_lodge: { name: 'Mountain Lodge', cost: 1500, description: 'Nature retreat lodge (2x2)', size: 2 },
+  mountain_trailhead: { name: 'Trailhead', cost: 400, description: 'Hiking trail entrance (3x3)', size: 3 },
 };
 
 export interface Tile {
@@ -173,16 +172,4 @@ export interface GameState {
   waterBodies: WaterBody[];
   gameVersion: number;
   cities: City[];
-}
-
-export interface SavedCityMeta {
-  id: string;
-  cityName: string;
-  population: number;
-  money: number;
-  year: number;
-  month: number;
-  gridSize: number;
-  savedAt: number;
-  roomCode?: string;
 }

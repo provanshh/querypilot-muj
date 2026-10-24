@@ -12,7 +12,7 @@ const BFS_PARENT_Y = new Int16Array(MAX_PATH_LENGTH);
 const BFS_VISITED = new Uint8Array(256 * 256); // Max 256x256 grid size
 
 // Get opposite direction
-export function getOppositeDirection(direction: CarDirection): CarDirection {
+function getOppositeDirection(direction: CarDirection): CarDirection {
   return OPPOSITE_DIRECTION[direction];
 }
 

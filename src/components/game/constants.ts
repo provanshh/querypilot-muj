@@ -1,6 +1,5 @@
 import { BuildingType } from '@/games/isocity/types';
-import { DirectionMeta } from '@/core/types';
-import { CarDirection, TILE_WIDTH, TILE_HEIGHT } from './types';
+import { CarDirection, TILE_WIDTH, TILE_HEIGHT, type DirectionMeta } from './types';
 
 // Vehicle colors (duller/muted versions)
 export const CAR_COLORS = ['#d97777', '#d4a01f', '#2ba67a', '#4d84c8', '#9a6ac9'];
@@ -36,16 +35,11 @@ export const PEDESTRIAN_SOCIAL_DURATION = 4.0;      // How long socializing last
 export const PEDESTRIAN_DOG_CHANCE = 0.05;          // Chance of walking a dog (reduced for perf)
 export const PEDESTRIAN_BAG_CHANCE = 0.15;          // Chance of carrying a bag
 export const PEDESTRIAN_HAT_CHANCE = 0.15;          // Chance of wearing a hat
-export const PEDESTRIAN_IDLE_CHANCE = 0.01;         // Chance to stop and idle briefly (reduced for perf)
-
-// Beach/swimming pedestrian constants
-export const PEDESTRIAN_BEACH_CHANCE = 0.15;        // Chance a park-bound pedestrian goes to beach instead
+export const PEDESTRIAN_IDLE_CHANCE = 0.01;        // Chance a park-bound pedestrian goes to beach instead
 export const PEDESTRIAN_BEACH_MIN_TIME = 30.0;      // Minimum time at beach
 export const PEDESTRIAN_BEACH_MAX_TIME = 180.0;     // Maximum time at beach
 export const PEDESTRIAN_BEACH_SWIM_CHANCE = 0.6;    // Chance of swimming vs lying on mat
-export const PEDESTRIAN_MAT_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#ff69b4'];
-export const MAX_BEACH_SWIMMERS_PER_TILE = 3;       // Max swimmers per water tile
-export const MAX_BEACH_MATS_PER_EDGE = 2;           // Max mats per beach edge
+export const PEDESTRIAN_MAT_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#ff69b4'];           // Max mats per beach edge
 
 // Pedestrian performance limits
 export const PEDESTRIAN_MAX_COUNT = 560;            // Maximum pedestrians (hard cap) - reduced ~30%
@@ -55,8 +49,7 @@ export const PEDESTRIAN_ROAD_TILE_DENSITY_MOBILE = 0.5; // Mobile: lower density
 export const PEDESTRIAN_SPAWN_BATCH_SIZE = 25;      // How many to try spawning at once
 export const PEDESTRIAN_SPAWN_BATCH_SIZE_MOBILE = 5; // Mobile: smaller batches
 export const PEDESTRIAN_SPAWN_INTERVAL = 0.03;      // Seconds between spawn batches
-export const PEDESTRIAN_SPAWN_INTERVAL_MOBILE = 0.15; // Mobile: slower spawning
-export const PEDESTRIAN_UPDATE_SKIP_DISTANCE = 30;  // Skip detailed updates for pedestrians this far from view
+export const PEDESTRIAN_SPAWN_INTERVAL_MOBILE = 0.15;  // Skip detailed updates for pedestrians this far from view
 
 // Zoom limits for camera
 export const ZOOM_MIN = 0.3;                      // Minimum zoom level (most zoomed out - for large maps/multiple cities)
@@ -70,16 +63,14 @@ export const PEDESTRIAN_MIN_ZOOM = 0.5;           // Desktop pedestrian threshol
 export const PEDESTRIAN_MIN_ZOOM_MOBILE = 0.55;   // Mobile pedestrian threshold (slightly higher for perf)
 
 // Vehicle rendering thresholds - hide at very zoomed out levels for performance
-export const VEHICLE_FAR_ZOOM_THRESHOLD = 0.25;   // Below this zoom: hide ALL vehicles/pedestrians on desktop too
-export const TRAIN_MIN_ZOOM_FAR = 0.20;           // Trains visible slightly further out than cars
+export const VEHICLE_FAR_ZOOM_THRESHOLD = 0.25;           // Trains visible slightly further out than cars
 export const BOAT_MIN_ZOOM_FAR = 0.20;            // Boats visible at moderate zoom
 export const HELICOPTER_MIN_ZOOM_FAR = 0.20;      // Helicopters visible at moderate zoom
 export const AIRPLANE_MIN_ZOOM_FAR = 0;           // Airplanes always visible at all zoom levels
 export const TRAFFIC_LIGHT_MIN_ZOOM = 0.45;       // Traffic lights at intersections
 export const DIRECTION_ARROWS_MIN_ZOOM = 0.65;    // Directional arrows on merged roads
 export const MEDIAN_PLANTS_MIN_ZOOM = 0.55;       // Plants/shrubs on road medians
-export const LANE_MARKINGS_MIN_ZOOM = 0.5;        // Lane markings and road lines
-export const LANE_MARKINGS_MEDIAN_MIN_ZOOM = 0.6; // Median markings for avenues/highways
+export const LANE_MARKINGS_MIN_ZOOM = 0.5; // Median markings for avenues/highways
 export const SIDEWALK_MIN_ZOOM = 0.25;            // Sidewalks on road edges (desktop)
 export const SIDEWALK_MIN_ZOOM_MOBILE = 0.25;     // Sidewalks on mobile (lower = visible when more zoomed out)
 export const SKIP_SMALL_ELEMENTS_ZOOM_THRESHOLD = 0.5; // Desktop: hide boats/helis/smog during pan/zoom when below this
@@ -200,10 +191,7 @@ export const BARGE_DOCK_TIME_MIN = 8; // Minimum seconds docked at marina
 export const BARGE_DOCK_TIME_MAX = 15; // Maximum seconds docked at marina
 export const BARGE_CARGO_VALUE_MIN = 100; // Minimum cargo value (adds to city income per delivery)
 export const BARGE_CARGO_VALUE_MAX = 350; // Maximum cargo value (makes ocean marinas worthwhile)
-export const BARGE_WAKE_SPAWN_INTERVAL = 0.05; // Slower wake spawn than boats (larger vessel)
-
-// Factory smog system constants
-export const SMOG_BUILDINGS: BuildingType[] = ['factory_medium', 'factory_large'];
+export const BARGE_WAKE_SPAWN_INTERVAL = 0.05;
 export const SMOG_PARTICLE_MAX_AGE = 8.0; // seconds - how long smog particles last
 export const SMOG_PARTICLE_MAX_AGE_MOBILE = 5.0; // seconds - shorter on mobile for performance
 export const SMOG_SPAWN_INTERVAL_MEDIUM = 0.4; // seconds between particles for medium factory
@@ -277,23 +265,10 @@ export const OPPOSITE_DIRECTION: Record<CarDirection, CarDirection> = {
   east: 'west',
   south: 'north',
   west: 'east',
-};
-
-// Traffic light timing constants (faster cycle)
-export const TRAFFIC_LIGHT_GREEN_DURATION = 3.0;   // Seconds
-export const TRAFFIC_LIGHT_YELLOW_DURATION = 0.8;  // Seconds
-export const TRAFFIC_LIGHT_CYCLE = 7.6;            // Full cycle time
+};            // Full cycle time
 
 // Train system constants
-export const TRAIN_MIN_ZOOM = 0.35;               // Minimum zoom to show trains (normal)
-export const TRAIN_SPAWN_INTERVAL = 3.0;          // Seconds between train spawn attempts
-export const TRAIN_SPAWN_INTERVAL_MOBILE = 6.0;   // Mobile: slower train spawning
-export const MIN_RAIL_TILES_FOR_TRAINS = 10;      // Minimum rail tiles needed
-export const MAX_TRAINS = 35;                      // Maximum trains in city
-export const MAX_TRAINS_MOBILE = 8;               // Mobile: fewer trains for performance
-
-// Far zoom thresholds - all mobile/animated entities hidden below these levels
-export const HELICOPTER_MIN_ZOOM = 0.3;           // Minimum zoom to show helicopters
+export const TRAIN_MIN_ZOOM = 0.35;           // Minimum zoom to show helicopters
 export const SMOG_MIN_ZOOM = 0.35;                // Minimum zoom to show factory smog
 export const FIREWORK_MIN_ZOOM = 0.3;             // Minimum zoom to show fireworks
 
@@ -314,13 +289,7 @@ export const CLOUD_MAX_COUNT_MOBILE = 10;             // Fewer clouds on mobile 
 export const CLOUD_SPAWN_INTERVAL = 2.5;              // Seconds between cloud spawn attempts
 export const CLOUD_SPAWN_INTERVAL_MOBILE = 4.5;       // Slower spawning on mobile
 export const CLOUD_SPEED_MIN = 8;                     // Minimum cloud drift speed (pixels/second)
-export const CLOUD_SPEED_MAX = 24;                    // Maximum cloud drift speed (cirrus moves faster)
-export const CLOUD_SCALE_MIN = 0.5;                   // Minimum cloud scale
-export const CLOUD_SCALE_MAX = 1.8;                   // Maximum cloud scale
-export const CLOUD_PUFF_COUNT_MIN = 4;                // Minimum puffs per cloud (cumulus)
-export const CLOUD_PUFF_COUNT_MAX = 10;               // Maximum puffs per cloud
-export const CLOUD_PUFF_SIZE_MIN = 20;                // Minimum puff radius
-export const CLOUD_PUFF_SIZE_MAX = 55;                // Maximum puff radius
+export const CLOUD_SPEED_MAX = 24;                // Maximum puff radius
 export const CLOUD_WIDTH = 150;                       // Approximate cloud width for spawn offset
 export const CLOUD_DESPAWN_MARGIN = 300;              // Distance past viewport to despawn clouds
 // Wind direction: clouds drift from southwest to northeast (isometric perspective)

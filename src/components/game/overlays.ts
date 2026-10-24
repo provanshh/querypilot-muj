@@ -11,100 +11,12 @@ import { OverlayMode } from './types';
 // ============================================================================
 
 /** Service coverage data for a tile */
-export type ServiceCoverage = {
+type ServiceCoverage = {
   fire: number;
   police: number;
   health: number;
   education: number;
 };
-
-/** Configuration for an overlay mode */
-export type OverlayConfig = {
-  /** Display label */
-  label: string;
-  /** Tooltip/title text */
-  title: string;
-  /** Button background color when active */
-  activeColor: string;
-  /** Button hover color when active */
-  hoverColor: string;
-};
-
-// ============================================================================
-// Overlay Configuration
-// ============================================================================
-
-/** Configuration for each overlay mode */
-export const OVERLAY_CONFIG: Record<OverlayMode, OverlayConfig> = {
-  none: {
-    label: 'None',
-    title: 'No Overlay',
-    activeColor: '',
-    hoverColor: '',
-  },
-  power: {
-    label: 'Power',
-    title: 'Power Grid',
-    activeColor: 'bg-amber-500',
-    hoverColor: 'hover:bg-amber-600',
-  },
-  water: {
-    label: 'Water',
-    title: 'Water System',
-    activeColor: 'bg-blue-500',
-    hoverColor: 'hover:bg-blue-600',
-  },
-  fire: {
-    label: 'Fire',
-    title: 'Fire Coverage',
-    activeColor: 'bg-red-500',
-    hoverColor: 'hover:bg-red-600',
-  },
-  police: {
-    label: 'Police',
-    title: 'Police Coverage',
-    activeColor: 'bg-blue-600',
-    hoverColor: 'hover:bg-blue-700',
-  },
-  health: {
-    label: 'Health',
-    title: 'Health Coverage',
-    activeColor: 'bg-green-500',
-    hoverColor: 'hover:bg-green-600',
-  },
-  education: {
-    label: 'Education',
-    title: 'Education Coverage',
-    activeColor: 'bg-purple-500',
-    hoverColor: 'hover:bg-purple-600',
-  },
-  subway: {
-    label: 'Subway',
-    title: 'Subway Coverage',
-    activeColor: 'bg-yellow-500',
-    hoverColor: 'hover:bg-yellow-600',
-  },
-};
-
-/** Map of building tools to their corresponding overlay mode */
-export const TOOL_TO_OVERLAY_MAP: Record<string, OverlayMode> = {
-  power_plant: 'power',
-  water_tower: 'water',
-  fire_station: 'fire',
-  police_station: 'police',
-  hospital: 'health',
-  school: 'education',
-  university: 'education',
-  subway_station: 'subway',
-  subway: 'subway',
-};
-
-/** Get the button class name for an overlay button */
-export function getOverlayButtonClass(mode: OverlayMode, isActive: boolean): string {
-  if (!isActive || mode === 'none') return '';
-  const config = OVERLAY_CONFIG[mode];
-  return `${config.activeColor} ${config.hoverColor}`;
-}
 
 // ============================================================================
 // Overlay Fill Style Calculation
@@ -189,19 +101,6 @@ export function getOverlayFillStyle(
       return NO_OVERLAY;
   }
 }
-
-/**
- * Get the overlay mode that should be shown for a given tool.
- * Returns 'none' if the tool doesn't have an associated overlay.
- */
-export function getOverlayForTool(tool: string): OverlayMode {
-  return TOOL_TO_OVERLAY_MAP[tool] ?? 'none';
-}
-
-/** List of all overlay modes (for iteration) */
-export const OVERLAY_MODES: OverlayMode[] = [
-  'none', 'power', 'water', 'fire', 'police', 'health', 'education', 'subway'
-];
 
 // ============================================================================
 // Service Radius Overlay Helpers

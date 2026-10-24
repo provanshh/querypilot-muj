@@ -3,7 +3,7 @@
  * Extracted from CanvasIsometricGrid for better modularity
  */
 
-import { Airplane, Helicopter, Seaplane, TILE_WIDTH, TILE_HEIGHT, PlaneType } from './types';
+import { Airplane, Helicopter, Seaplane, PlaneType } from './types';
 import {
   AIRPLANE_SPRITE_COLS,
   AIRPLANE_SPRITE_ROWS,
@@ -585,16 +585,6 @@ function drawFallbackAirplane(
   }
 
   ctx.restore();
-}
-
-// Helper function to shade a hex color
-function shadeColor(color: string, percent: number): string {
-  const num = parseInt(color.replace('#', ''), 16);
-  const amt = Math.round(2.55 * percent);
-  const R = Math.min(255, Math.max(0, (num >> 16) + amt));
-  const G = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + amt));
-  const B = Math.min(255, Math.max(0, (num & 0x0000ff) + amt));
-  return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`;
 }
 
 /**

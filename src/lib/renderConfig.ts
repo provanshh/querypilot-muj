@@ -706,50 +706,13 @@ const SPRITE_PACK_SPRITES4: SpritePack = {
 };
 
 // ============================================================================
-// SPRITE PACK: SPRITES4 HARRY POTTER (Harry Potter themed variant)
-// ============================================================================
-// Same layout and configuration as SPRITES4, but with Harry Potter themed artwork
-const SPRITE_PACK_SPRITES4_HARRY: SpritePack = {
-  ...SPRITE_PACK_SPRITES4,
-  id: 'sprites4-harry',
-  name: 'Harry Potter Theme',
-  src: '/assets/sprites_red_water_new_harry.png',
-  denseSrc: '/assets/sprites_red_water_new_harry_dense.png',
-  modernSrc: '/assets/sprites_red_water_new_harry_dense.png',
-  constructionSrc: '/assets/sprites_red_water_new_harry_construction.png',
-  // Note: Uses same construction, abandoned, dense, and parks sheets as the default
-  // If you have Harry Potter themed variants for those, update these paths:
-  // constructionSrc: '/assets/sprites_red_water_new_harry_construction.png',
-  // abandonedSrc: '/assets/sprites_red_water_new_harry_abandoned.png',
-  // denseSrc: '/assets/sprites_red_water_new_harry_dense.png',
-};
-
-// ============================================================================
-// SPRITE PACK: SPRITES4 CHINA (Chinese themed variant)
-// ============================================================================
-// Same layout and configuration as SPRITES4, but with Chinese themed artwork
-const SPRITE_PACK_SPRITES4_CHINA: SpritePack = {
-  ...SPRITE_PACK_SPRITES4,
-  id: 'sprites4-china',
-  name: 'Chinese Theme',
-  src: '/assets/sprites_red_water_new_china.png',
-  // Note: Uses same construction, abandoned, dense, and parks sheets as the default
-  // If you have Chinese themed variants for those, update these paths:
-  // constructionSrc: '/assets/sprites_red_water_new_china_construction.png',
-  // abandonedSrc: '/assets/sprites_red_water_new_china_abandoned.png',
-  // denseSrc: '/assets/sprites_red_water_new_china_dense.png',
-};
-
-// ============================================================================
 // SPRITE PACKS REGISTRY
 // ============================================================================
 // Add new sprite packs here. Each pack can have completely different
 // sprite arrangements, offsets, and scaling.
 // ============================================================================
-export const SPRITE_PACKS: SpritePack[] = [
+const SPRITE_PACKS: SpritePack[] = [
   SPRITE_PACK_SPRITES4,
-  SPRITE_PACK_SPRITES4_HARRY,
-  SPRITE_PACK_SPRITES4_CHINA,
 ];
 
 // Default sprite pack ID
@@ -777,16 +740,6 @@ export function setActiveSpritePack(pack: SpritePack) {
 export function getActiveSpritePack(): SpritePack {
   return _activeSpritePack;
 }
-
-// Legacy exports that read from the active sprite pack
-export const SPRITE_SHEET = {
-  get src() { return _activeSpritePack.src; },
-  get cols() { return _activeSpritePack.cols; },
-  get rows() { return _activeSpritePack.rows; },
-  get layout() { return _activeSpritePack.layout; },
-};
-
-export const SPRITE_ORDER = _activeSpritePack.spriteOrder;
 
 export const SPRITE_VERTICAL_OFFSETS = new Proxy({} as Record<string, number>, {
   get(_, key: string) {
@@ -882,19 +835,5 @@ export function getSpriteCoords(
     sy: sy,
     sw: tileWidth,
     sh: sh,
-  };
-}
-
-// Helper to get offsets for a specific pack
-export function getSpriteOffsets(
-  buildingType: string,
-  pack?: SpritePack
-): { vertical: number; horizontal: number } {
-  const activePack = pack || _activeSpritePack;
-  const spriteKey = activePack.buildingToSprite[buildingType];
-  
-  return {
-    vertical: spriteKey ? (activePack.verticalOffsets[spriteKey] ?? 0) : 0,
-    horizontal: spriteKey ? (activePack.horizontalOffsets[spriteKey] ?? 0) : 0,
   };
 }

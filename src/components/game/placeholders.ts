@@ -4,14 +4,14 @@
 // Colors for rendering buildings before sprites are loaded
 // Based on zone/category for visual consistency
 
-export interface PlaceholderColor {
+interface PlaceholderColor {
   top: string;
   left: string;
   right: string;
   height: number;
 }
 
-export const PLACEHOLDER_COLORS: Record<string, PlaceholderColor> = {
+const PLACEHOLDER_COLORS: Record<string, PlaceholderColor> = {
   // Residential - greens
   house_small: { top: '#4ade80', left: '#22c55e', right: '#86efac', height: 0.6 },
   house_medium: { top: '#4ade80', left: '#22c55e', right: '#86efac', height: 0.8 },
