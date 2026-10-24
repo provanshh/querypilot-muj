@@ -19,12 +19,18 @@ interface QueryPilotContextType {
   isConnected: boolean;
   latencyMs: number;
   highlightedRoads: Array<{ x: number; y: number }>;
+  showHolographicLabels: boolean;
+  isDemoTourOpen: boolean;
   
   // Actions
   setActiveView: (view: DashboardView) => void;
   selectDatabase: (id: string) => void;
   selectTable: (table: TableMetadata | null) => void;
   focusTable: (table: TableMetadata) => void;
+  setNavigationTarget: (target: { x: number; y: number } | null) => void;
+  setShowHolographicLabels: (show: boolean | ((prev: boolean) => boolean)) => void;
+  setIsDemoTourOpen: (open: boolean) => void;
+  startDemoTour: () => void;
   startInvestigation: (prompt: string, category?: MissionCategory) => void;
   cancelInvestigation: () => void;
   importCustomSchema: (schemaJson: string) => boolean;
@@ -107,6 +113,13 @@ export function QueryPilotProvider({ children }: { children: React.ReactNode }) 
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [latencyMs, setLatencyMs] = useState<number>(14);
   const [highlightedRoads, setHighlightedRoads] = useState<Array<{ x: number; y: number }>>([]);
+  const [showHolographicLabels, setShowHolographicLabels] = useState<boolean>(true);
+  const [isDemoTourOpen, setIsDemoTourOpen] = useState<boolean>(false);
+
+  const startDemoTour = useCallback(() => {
+    setActiveView('city');
+    setIsDemoTourOpen(true);
+  }, []);
 
   const missionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -361,10 +374,16 @@ export function QueryPilotProvider({ children }: { children: React.ReactNode }) 
         isConnected,
         latencyMs,
         highlightedRoads,
+        showHolographicLabels,
+        isDemoTourOpen,
         setActiveView,
         selectDatabase,
         selectTable,
         focusTable,
+        setNavigationTarget,
+        setShowHolographicLabels,
+        setIsDemoTourOpen,
+        startDemoTour,
         startInvestigation,
         cancelInvestigation,
         importCustomSchema,

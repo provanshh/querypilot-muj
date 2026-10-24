@@ -23,7 +23,8 @@ export function TopNavigation() {
     activeView, 
     setActiveView,
     isConnected, 
-    latencyMs 
+    latencyMs,
+    startDemoTour
   } = useQueryPilot();
 
   const navItems: Array<{ id: DashboardView; label: string; icon: React.ReactNode }> = [
@@ -80,8 +81,20 @@ export function TopNavigation() {
         })}
       </nav>
 
-      {/* Right Connection & Database Selector Pill */}
-      <div className="pointer-events-auto flex items-center gap-2 bg-[#0a0f1d]/90 backdrop-blur-md border border-cyan-500/30 px-3 py-1.5 rounded-xl shadow-2xl">
+      {/* Right Controls: Guided Demo Tour & Database Selector */}
+      <div className="pointer-events-auto flex items-center gap-2.5">
+        {/* Interactive Guided Demo Tour Launcher */}
+        <button
+          onClick={startDemoTour}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 border border-amber-400/50 hover:border-amber-300 text-amber-300 hover:text-white font-mono text-xs font-bold tracking-wide shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+          title="Start Live Interactive Presentation Walkthrough"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+          <span>START DEMO TOUR</span>
+        </button>
+
+        {/* Database Selector & Status Pill */}
+        <div className="flex items-center gap-2 bg-[#0a0f1d]/90 backdrop-blur-md border border-cyan-500/30 px-3 py-1.5 rounded-xl shadow-2xl">
         {/* Active Database Dropdown */}
         <div className="relative group">
           <button className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-700/60 hover:border-cyan-500/50 text-xs font-mono text-cyan-200 transition-colors">
@@ -121,6 +134,7 @@ export function TopNavigation() {
           <span>{latencyMs}ms</span>
         </div>
       </div>
-    </header>
+    </div>
+  </header>
   );
 }

@@ -142,6 +142,9 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
   const renderPendingRef = useRef<number | null>(null); // PERF: Track pending render frame
   const lastMainRenderTimeRef = useRef<number>(0); // PERF: Throttle main renders at high speed
   const [offset, setOffset] = useState({ x: isMobile ? 200 : 620, y: isMobile ? 100 : 160 });
+  const offsetRef = useRef(offset);
+  offsetRef.current = offset;
+  const cameraAnimRef = useRef<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [isWheelZooming, setIsWheelZooming] = useState(false); // State to trigger re-render when wheel zooming stops
@@ -2534,6 +2537,10 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
   });
   
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (cameraAnimRef.current) {
+      cancelAnimationFrame(cameraAnimRef.current);
+      cameraAnimRef.current = null;
+    }
     if (e.button === 1 || (e.button === 0 && e.altKey)) {
       setIsPanning(true);
       setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
@@ -2628,9 +2635,14 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
     };
   }, [getMapBounds, canvasSize.width, canvasSize.height]);
 
-  // Handle minimap navigation - center the view on the target tile
+  // Handle minimap / schema navigation - smoothly glide the camera to center the target tile
   useEffect(() => {
     if (!navigationTarget) return;
+
+    if (cameraAnimRef.current) {
+      cancelAnimationFrame(cameraAnimRef.current);
+      cameraAnimRef.current = null;
+    }
     
     // Convert grid coordinates to screen coordinates
     const { screenX, screenY } = gridToScreen(navigationTarget.x, navigationTarget.y, 0, 0);
@@ -2639,20 +2651,57 @@ export function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile
     const centerX = canvasSize.width / 2;
     const centerY = canvasSize.height / 2;
     
-    const newOffset = {
-      x: centerX - screenX * zoom,
-      y: centerY - screenY * zoom,
-    };
+    const targetXRaw = centerX - screenX * zoom;
+    const targetYRaw = centerY - screenY * zoom;
     
-    // Clamp and set the new offset - this is a legitimate use case for responding to navigation requests
     const bounds = getMapBounds(zoom, canvasSize.width, canvasSize.height);
-    setOffset({ // eslint-disable-line
-      x: Math.max(bounds.minOffsetX, Math.min(bounds.maxOffsetX, newOffset.x)),
-      y: Math.max(bounds.minOffsetY, Math.min(bounds.maxOffsetY, newOffset.y)),
-    });
-    
-    // Signal that navigation is complete
-    onNavigationComplete?.();
+    const destX = Math.max(bounds.minOffsetX, Math.min(bounds.maxOffsetX, targetXRaw));
+    const destY = Math.max(bounds.minOffsetY, Math.min(bounds.maxOffsetY, targetYRaw));
+
+    const originX = offsetRef.current.x;
+    const originY = offsetRef.current.y;
+    const dx = destX - originX;
+    const dy = destY - originY;
+    const dist = Math.hypot(dx, dy);
+
+    // If virtually at target, snap immediately
+    if (dist < 4) {
+      setOffset({ x: destX, y: destY });
+      onNavigationComplete?.();
+      return;
+    }
+
+    // Dynamic duration based on travel distance (smooth & responsive)
+    const duration = Math.min(650, Math.max(300, dist * 0.5));
+    const startTime = performance.now();
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const step = (time: number) => {
+      const elapsed = time - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(progress);
+
+      setOffset({
+        x: originX + dx * eased,
+        y: originY + dy * eased,
+      });
+
+      if (progress < 1) {
+        cameraAnimRef.current = requestAnimationFrame(step);
+      } else {
+        cameraAnimRef.current = null;
+        onNavigationComplete?.();
+      }
+    };
+
+    cameraAnimRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (cameraAnimRef.current) {
+        cancelAnimationFrame(cameraAnimRef.current);
+        cameraAnimRef.current = null;
+      }
+    };
   }, [navigationTarget, zoom, canvasSize.width, canvasSize.height, getMapBounds, onNavigationComplete]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {

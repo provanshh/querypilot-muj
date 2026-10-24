@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQueryPilot } from '@/context/QueryPilotContext';
 import { 
   X, 
@@ -22,6 +22,17 @@ export function TableInspectorModal() {
   const { selectedTable, selectTable, startInvestigation } = useQueryPilot();
   const [activeTab, setActiveTab] = useState<'columns' | 'sample' | 'relations'>('columns');
 
+  // Escape key closes modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        selectTable(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectTable]);
+
   if (!selectedTable) return null;
 
   const handleLaunchInvestigationForTable = () => {
@@ -30,8 +41,14 @@ export function TableInspectorModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-[#0a0f1d] border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/60 overflow-hidden flex flex-col max-h-[85vh]">
+    <div 
+      onClick={() => selectTable(null)}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-150"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl bg-[#0a0f1d] border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/60 overflow-hidden flex flex-col max-h-[85vh]"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-cyan-500/20 bg-slate-900/60">
           <div className="flex items-center gap-3">
